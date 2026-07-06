@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # Cấu hình SQL Server chạy qua Docker (Phù hợp cho cả Mac M1/M2/M3 dùng Azure SQL Edge hoặc SQL Server Linux 2022)
+  sqlserver:
+    # Đối với Mac chip M (ARM64), Azure SQL Edge thường ổn định và nhẹ hơn. 
+    # Nếu muốn dùng bản SQL Server gốc, có thể dùng 'mcr.microsoft.com/mssql/server:2022-latest'
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: library_sql_server
+    environment:
+      - ACCEPT_EULA=1
+      - MSSQL_SA_PASSWORD=SuperStrongPassword123! # Mật khẩu SA
+      - MSSQL_PID=Developer
+      - MSSQL_USER=library_user
+      - MSSQL_PASSWORD=LibraryUserPwd123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+volumes:
+  sqlserver_data:

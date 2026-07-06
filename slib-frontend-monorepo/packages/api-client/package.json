@@ -1,0 +1,18 @@
+{
+  "name": "@slib/api-client",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/axios.ts",
+  "types": "./src/axios.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^5.3.3"
+  }
+}

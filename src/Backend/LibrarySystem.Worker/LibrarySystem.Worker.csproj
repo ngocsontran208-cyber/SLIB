@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-LibrarySystem.Worker-87890c45-dcd7-4a22-919d-ef713d1e5b5c</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire" Version="1.8.23" />
+    <PackageReference Include="Hangfire.SqlServer" Version="1.8.23" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.17" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LibrarySystem.Infrastructure\LibrarySystem.Infrastructure.csproj" />
+    <ProjectReference Include="..\LibrarySystem.Application\LibrarySystem.Application.csproj" />
+  </ItemGroup>
+</Project>
