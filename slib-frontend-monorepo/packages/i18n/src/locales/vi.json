@@ -149,6 +149,15 @@
     "add_item": "Thêm tài liệu",
     "record_title": "Nhan đề",
     "record_author": "Tác giả",
-    "save_record": "Lưu Biểu Ghi"
+    "save_record": "Lưu Biểu Ghi",
+
+    "circulation_module": "Lưu Thông",
+    "borrow_return": "Mượn / Trả Sách",
+    "patron_management": "Quản Lý Bạn Đọc",
+    "patron_desc": "Tra cứu thông tin, theo dõi nợ đọng của độc giả.",
+    "loan_history": "Tra cứu Mượn Trả",
+    "renew_management": "Quản Lý Gia Hạn",
+    "fine_management": "Quản Lý Tiền Phạt",
+    "circulation_params": "Tham Số Lưu Thông"
   }
 }

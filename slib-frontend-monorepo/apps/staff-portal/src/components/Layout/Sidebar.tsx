@@ -10,7 +10,11 @@ import {
   ShoppingCart,
   Library,
   BookPlus,
-  Barcode
+  Barcode,
+  ScanLine,
+  History,
+  RotateCw,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -52,6 +56,48 @@ export const Sidebar: React.FC = () => {
 
         {(isAdmin || isLibrarian) && (
           <>
+            <div className="px-6 mb-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              Lưu Thông
+            </div>
+            <ul className="space-y-1 px-3 mb-8">
+              <li>
+                <NavLink to="/admin/circulation/borrow-return" className={getNavLinkClass}>
+                  <ScanLine size={18} />
+                  <span>{t('borrow_return', 'Mượn/Trả nhanh')}</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/circulation/patrons" className={getNavLinkClass}>
+                  <Users size={18} />
+                  <span>{t('patron_management', 'Bạn đọc')}</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/circulation/loans" className={getNavLinkClass}>
+                  <History size={18} />
+                  <span>{t('loan_history', 'Tra cứu mượn trả')}</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/circulation/renew" className={getNavLinkClass}>
+                  <RotateCw size={18} />
+                  <span>{t('renew_management', 'Gia hạn')}</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/circulation/fines" className={getNavLinkClass}>
+                  <CreditCard size={18} />
+                  <span>{t('fine_management', 'Tiền phạt')}</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/policies" className={getNavLinkClass}>
+                  <Settings size={18} />
+                  <span>{t('circulation_params', 'Tham số')}</span>
+                </NavLink>
+              </li>
+            </ul>
+
             <div className="px-6 mb-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               Biên Mục
             </div>

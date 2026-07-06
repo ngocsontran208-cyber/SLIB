@@ -1,10 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LogOut, User, Library, Users, ShoppingCart, Settings, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, Library, ShoppingCart, Settings, LayoutDashboard, ArrowRightLeft } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
+import { NotificationBell } from './NotificationBell';
 
 export const Header: React.FC = () => {
   const { user, logout, isAdmin, isLibrarian } = useAuth();
@@ -44,6 +45,10 @@ export const Header: React.FC = () => {
                   <Library size={18} />
                   Biên mục
                 </NavLink>
+                <NavLink to="/admin/circulation/borrow-return" className={navLinkClass}>
+                  <ArrowRightLeft size={18} />
+                  Lưu thông
+                </NavLink>
                 <NavLink to="/admin/vendors" className={navLinkClass}>
                   <ShoppingCart size={18} />
                   Bổ sung
@@ -62,6 +67,7 @@ export const Header: React.FC = () => {
 
         {/* Right Side: Tools & Profile */}
         <div className="flex items-center gap-5">
+          <NotificationBell />
           <ThemeSwitcher />
           <LanguageSwitcher />
           
@@ -71,10 +77,10 @@ export const Header: React.FC = () => {
             <div className="flex items-center gap-4 group cursor-pointer relative z-40">
               <div className="text-right hidden sm:block">
                 <div className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                  {user.email || user.username}
+                  {user.email}
                 </div>
                 <div className="text-[11px] font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400 mt-0.5">
-                  {user.role}
+                  {user.roles?.[0] || 'User'}
                 </div>
               </div>
               

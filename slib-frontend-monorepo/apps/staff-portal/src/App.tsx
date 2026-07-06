@@ -17,6 +17,11 @@ import { PurchaseOrderManagement } from './pages/acquisition/PurchaseOrderManage
 import { BibliographicManagement } from './pages/cataloging/BibliographicManagement';
 import { CatalogingForm } from './pages/cataloging/CatalogingForm';
 import { ItemRegistration } from './pages/cataloging/ItemRegistration';
+import { BorrowReturn } from './pages/circulation/BorrowReturn';
+import { LoanHistory } from './pages/circulation/LoanHistory';
+import { FineManagement } from './pages/circulation/FineManagement';
+import { PatronManagement } from './pages/circulation/PatronManagement';
+import { RenewManagement } from './pages/circulation/RenewManagement';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -60,6 +65,13 @@ function App() {
               <Route path="admin/cataloging/create" element={<ProtectedRoute requiredRole="Librarian"><CatalogingForm /></ProtectedRoute>} />
               <Route path="admin/cataloging/edit/:id" element={<ProtectedRoute requiredRole="Librarian"><CatalogingForm /></ProtectedRoute>} />
               <Route path="admin/cataloging/items/:recordId" element={<ProtectedRoute requiredRole="Librarian"><ItemRegistration /></ProtectedRoute>} />
+
+              {/* Circulation Module (Librarians & Admins) */}
+              <Route path="admin/circulation/borrow-return" element={<ProtectedRoute requiredRole="Librarian"><BorrowReturn /></ProtectedRoute>} />
+              <Route path="admin/circulation/patrons" element={<ProtectedRoute requiredRole="Librarian"><PatronManagement /></ProtectedRoute>} />
+              <Route path="admin/circulation/loans" element={<ProtectedRoute requiredRole="Librarian"><LoanHistory /></ProtectedRoute>} />
+              <Route path="admin/circulation/renew" element={<ProtectedRoute requiredRole="Librarian"><RenewManagement /></ProtectedRoute>} />
+              <Route path="admin/circulation/fines" element={<ProtectedRoute requiredRole="Librarian"><FineManagement /></ProtectedRoute>} />
 
               {/* Acquisition Module (Librarians & Admins) */}
               <Route path="admin/vendors" element={<ProtectedRoute requiredRole="Librarian"><VendorManagement /></ProtectedRoute>} />

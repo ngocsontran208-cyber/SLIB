@@ -35,6 +35,8 @@ namespace LibrarySystem.Domain.Entities
     public class MarcField
     {
         public string Tag { get; set; } = string.Empty;
+        public char? Indicator1 { get; set; }
+        public char? Indicator2 { get; set; }
         public List<MarcSubfield> Subfields { get; set; } = new();
     }
 
