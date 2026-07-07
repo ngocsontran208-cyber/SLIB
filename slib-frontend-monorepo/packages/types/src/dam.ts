@@ -1,10 +1,12 @@
-export enum AssetType {
-  PDF = 0,
-  Video = 1,
-  Audio = 2,
-  Image = 3,
-  Other = 4
-}
+export const AssetType = {
+  PDF: 0,
+  Video: 1,
+  Audio: 2,
+  Image: 3,
+  Other: 4
+} as const;
+
+export type AssetType = typeof AssetType[keyof typeof AssetType];
 
 export interface AssetMetadataConfig {
   id?: number;

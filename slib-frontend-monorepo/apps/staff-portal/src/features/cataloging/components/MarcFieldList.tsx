@@ -1,9 +1,11 @@
 import React, { useMemo, useEffect } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { MarcFieldRow } from './MarcFieldRow';
 
 export const MarcFieldList: React.FC = () => {
+  const { t } = useTranslation();
   const { control, watch } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -55,7 +57,18 @@ export const MarcFieldList: React.FC = () => {
     <div className="flex flex-col md:flex-row gap-6 relative">
       
       {/* Main Content: Continuous Scroll List */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        
+        {/* Grid Header */}
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-2 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
+          <div className="w-16 flex-shrink-0 text-center">{t('actions')}</div>
+          <div className="w-12 flex-shrink-0 text-center">Tag</div>
+          <div className="w-8 flex-shrink-0 text-center">I1</div>
+          <div className="w-8 flex-shrink-0 text-center">I2</div>
+          <div className="w-12 flex-shrink-0 text-center pl-1">$</div>
+          <div className="flex-1 px-3">{t('data')}</div>
+        </div>
+
         {fields.map((field, index) => (
           <MarcFieldRow 
             key={field.id}
@@ -67,16 +80,16 @@ export const MarcFieldList: React.FC = () => {
         <button
           type="button"
           onClick={() => append({ tag: '', indicator1: '', indicator2: '', subfields: [{ code: 'a', value: '' }] })}
-          className="w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 font-bold"
+          className="w-full py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center justify-center gap-2 font-bold text-sm border-t border-slate-200 dark:border-slate-700"
         >
-          <Plus size={18} /> Thêm trường MARC mới
+          <Plus size={16} /> {t('add_marc_field')}
         </button>
       </div>
 
       {/* Sticky Sidebar Navigation */}
       <div className="w-full md:w-32 flex-shrink-0 hidden md:block">
         <div className="sticky top-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2 shadow-sm">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Cuộn nhanh</div>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">{t('fast_scroll')}</div>
           <div className="flex flex-col gap-1">
             {groups.map(group => {
               const hasFields = watchFields.some((f: any) => f.tag && f.tag.startsWith(group.prefix));

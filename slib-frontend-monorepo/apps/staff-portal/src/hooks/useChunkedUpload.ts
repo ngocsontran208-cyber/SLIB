@@ -91,7 +91,7 @@ export const useChunkedUpload = () => {
       // 3. Complete Upload
       const completeRes = await uploadService.completeUpload(sessionId);
       
-      updateItem(item.id, { status: 'success', progress: 100 });
+      updateItem(item.id, { status: 'success', progress: 100, assetId: completeRes.assetId });
       console.log('Upload thành công:', completeRes);
       
     } catch (error: any) {

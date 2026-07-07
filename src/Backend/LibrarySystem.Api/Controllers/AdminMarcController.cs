@@ -19,12 +19,46 @@ namespace LibrarySystem.Api.Controllers
             _context = context;
         }
 
+        public class CreateMarcTemplateRequest
+        {
+            public string Name { get; set; } = string.Empty;
+            public string DocumentType { get; set; } = "Book";
+            public string? Description { get; set; }
+            public bool IsActive { get; set; } = true;
+            public ICollection<CreateTemplateFieldConfigRequest> FieldConfigs { get; set; } = new List<CreateTemplateFieldConfigRequest>();
+        }
+
+        public class CreateTemplateFieldConfigRequest
+        {
+            public int Id { get; set; }
+            public string Tag { get; set; } = string.Empty;
+            public string? AllowedSubfields { get; set; }
+            public bool IsRequired { get; set; }
+            public string? DefaultValue { get; set; }
+        }
+
         [HttpPost("templates")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateTemplate([FromBody] MarcTemplate request)
+        public async Task<IActionResult> CreateTemplate([FromBody] CreateMarcTemplateRequest requestDto)
         {
-            if (string.IsNullOrEmpty(request.Name))
+            if (string.IsNullOrEmpty(requestDto.Name))
                 return BadRequest("Template Name is required.");
+
+            var request = new MarcTemplate
+            {
+                Name = requestDto.Name,
+                DocumentType = requestDto.DocumentType,
+                Description = requestDto.Description,
+                IsActive = requestDto.IsActive,
+                FieldConfigs = requestDto.FieldConfigs.Select(f => new TemplateFieldConfig
+                {
+                    Id = f.Id,
+                    Tag = f.Tag,
+                    AllowedSubfields = f.AllowedSubfields,
+                    IsRequired = f.IsRequired,
+                    DefaultValue = f.DefaultValue
+                }).ToList()
+            };
 
             _context.MarcTemplates.Add(request);
             await _context.SaveChangesAsync();
@@ -53,6 +87,7 @@ namespace LibrarySystem.Api.Controllers
                 .Select(t => new {
                     t.Id,
                     t.Name,
+                    t.DocumentType,
                     t.Description,
                     t.IsActive,
                     t.CreatedAt,
@@ -79,6 +114,7 @@ namespace LibrarySystem.Api.Controllers
             if (template == null) return NotFound("Template not found.");
 
             template.Name = request.Name;
+            template.DocumentType = request.DocumentType;
             template.Description = request.Description;
             template.IsActive = request.IsActive;
 

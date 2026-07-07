@@ -13,6 +13,11 @@ namespace LibrarySystem.Domain.Entities
         public string Name { get; set; } = string.Empty;
         
         /// <summary>
+        /// Loại tài liệu (VD: Book, Journal, Thesis, Map, Audio...)
+        /// </summary>
+        public string DocumentType { get; set; } = "Book";
+        
+        /// <summary>
         /// Mô tả mẫu
         /// </summary>
         public string? Description { get; set; }
@@ -35,6 +40,7 @@ namespace LibrarySystem.Domain.Entities
         /// <summary>
         /// Danh sách các bản ghi thư mục được tạo từ mẫu này
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
         public ICollection<BibliographicRecord> BibliographicRecords { get; set; } = new List<BibliographicRecord>();
     }
 }

@@ -10,6 +10,7 @@ export interface UploadItemData {
   status: 'pending' | 'uploading' | 'success' | 'error';
   errorMessage?: string;
   file?: File;
+  assetId?: number;
 }
 
 export interface DragDropUploadProps {

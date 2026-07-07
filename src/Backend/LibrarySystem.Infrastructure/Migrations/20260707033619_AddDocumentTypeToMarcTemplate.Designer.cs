@@ -4,6 +4,7 @@ using LibrarySystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibrarySystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260707033619_AddDocumentTypeToMarcTemplate")]
+    partial class AddDocumentTypeToMarcTemplate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -364,7 +367,7 @@ namespace LibrarySystem.Infrastructure.Migrations
                     b.ToTable("AssetAccessLogs");
                 });
 
-            modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DigitalAsset", b =>
+            modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.AssetMetadataConfig", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -372,8 +375,35 @@ namespace LibrarySystem.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("BibliographicRecordId")
+                    b.Property<int>("AssetType")
                         .HasColumnType("int");
+
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSearchable")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AssetMetadataConfigs");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DigitalAsset", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Checksum")
                         .HasColumnType("nvarchar(max)");
@@ -401,11 +431,36 @@ namespace LibrarySystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BibliographicRecordId");
-
                     b.HasIndex("DrmPolicyId");
 
                     b.ToTable("DigitalAssets");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DigitalAssetValue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ConfigId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("ConfigId");
+
+                    b.ToTable("DigitalAssetValues");
                 });
 
             modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DrmPolicy", b =>
@@ -1731,18 +1786,31 @@ namespace LibrarySystem.Infrastructure.Migrations
 
             modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DigitalAsset", b =>
                 {
-                    b.HasOne("LibrarySystem.Domain.Entities.BibliographicRecord", "BibliographicRecord")
-                        .WithMany()
-                        .HasForeignKey("BibliographicRecordId");
-
                     b.HasOne("LibrarySystem.Domain.Entities.Dam.DrmPolicy", "DrmPolicy")
                         .WithMany("Assets")
                         .HasForeignKey("DrmPolicyId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("BibliographicRecord");
-
                     b.Navigation("DrmPolicy");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DigitalAssetValue", b =>
+                {
+                    b.HasOne("LibrarySystem.Domain.Entities.Dam.DigitalAsset", "Asset")
+                        .WithMany("MetadataValues")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LibrarySystem.Domain.Entities.Dam.AssetMetadataConfig", "Config")
+                        .WithMany("Values")
+                        .HasForeignKey("ConfigId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+
+                    b.Navigation("Config");
                 });
 
             modelBuilder.Entity("LibrarySystem.Domain.Entities.ElectronicResourceLicense", b =>
@@ -2002,6 +2070,16 @@ namespace LibrarySystem.Infrastructure.Migrations
             modelBuilder.Entity("LibrarySystem.Domain.Entities.CourseReserves.CourseReserveList", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.AssetMetadataConfig", b =>
+                {
+                    b.Navigation("Values");
+                });
+
+            modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DigitalAsset", b =>
+                {
+                    b.Navigation("MetadataValues");
                 });
 
             modelBuilder.Entity("LibrarySystem.Domain.Entities.Dam.DrmPolicy", b =>

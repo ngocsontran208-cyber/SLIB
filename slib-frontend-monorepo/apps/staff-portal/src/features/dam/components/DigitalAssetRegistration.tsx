@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@slib/api-client';
+import { api, damService } from '@slib/api-client';
 import { DragDropUpload, useToast } from '@slib/ui-core';
 import { useChunkedUpload } from '../../../hooks/useChunkedUpload';
 import { FileUp, Shield, LayoutTemplate, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -11,10 +11,10 @@ export const DigitalAssetRegistration = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [configs, setConfigs] = useState<any[]>([]);
+  const [bibRecords, setBibRecords] = useState<any[]>([]);
   const [policies, setPolicies] = useState<any[]>([]);
   
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [selectedBibRecord, setSelectedBibRecord] = useState<string>('');
   const [selectedPolicy, setSelectedPolicy] = useState<string>('');
   
   const { uploadItems, addFiles, removeItem, retryItem } = useChunkedUpload();
@@ -22,11 +22,11 @@ export const DigitalAssetRegistration = () => {
   useEffect(() => {
     const fetchDependencies = async () => {
       try {
-        const [configRes, policyRes] = await Promise.all([
-          api.get('/api/digital-asset/metadata-configs'),
+        const [bibRes, policyRes] = await Promise.all([
+          api.get('/api/cataloging/records'),
           api.get('/api/digital-asset/drm-policies')
         ]);
-        setConfigs(configRes.data);
+        setBibRecords(bibRes.data);
         setPolicies(policyRes.data);
       } catch (err) {
         console.error(err);
@@ -40,13 +40,12 @@ export const DigitalAssetRegistration = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate Required Fields
-    const missingFields = configs.filter(c => c.isRequired && !formData[c.fieldName]);
-    if (missingFields.length > 0) {
-      toast({ variant: "destructive", title: "Thiếu thông tin", description: `Vui lòng nhập: ${missingFields.map(c => c.fieldName).join(', ')}` });
+    if (!selectedBibRecord) {
+      toast({ variant: "destructive", title: "Thiếu thông tin", description: "Vui lòng chọn Biểu ghi thư mục gốc." });
       return;
     }
     
@@ -60,7 +59,7 @@ export const DigitalAssetRegistration = () => {
       return;
     }
     
-    const isUploading = uploadItems.some(i => i.status === 'uploading');
+    const isUploading = uploadItems.some(i => i.status === 'uploading' || i.status === 'pending');
     if (isUploading) {
       toast({ variant: "destructive", title: "Đang tải lên", description: "Vui lòng đợi quá trình tải lên hoàn tất." });
       return;
@@ -72,13 +71,25 @@ export const DigitalAssetRegistration = () => {
       return;
     }
 
-    // Mock lưu dữ liệu
-    console.log("Mock Save Metadata & DRM:", { formData, policy: selectedPolicy, uploadItems });
-    
-    toast({ title: "Thành công!", description: "Đăng ký tài liệu số hoàn tất. File đã được đưa vào hàng đợi xử lý ngầm." });
-    setTimeout(() => {
-      navigate('/admin/dam');
-    }, 1500);
+    const assetIds = uploadItems.map(i => i.assetId).filter(id => id !== undefined) as number[];
+    if (assetIds.length === 0) {
+      toast({ variant: "destructive", title: "Lỗi dữ liệu", description: "Không tìm thấy ID của tài liệu đã tải lên." });
+      return;
+    }
+
+    try {
+      await damService.registerDigitalAsset({
+        assetIds,
+        drmPolicyId: selectedPolicy,
+        bibliographicRecordId: parseInt(selectedBibRecord, 10)
+      });
+      toast({ title: "Thành công!", description: "Đăng ký tài liệu số hoàn tất. File đã được đưa vào hàng đợi xử lý ngầm." });
+      setTimeout(() => {
+        navigate('/admin/dam/assets');
+      }, 1500);
+    } catch (err) {
+      toast({ variant: "destructive", title: "Lỗi hệ thống", description: "Đã có lỗi xảy ra khi lưu thông tin." });
+    }
   };
 
   return (
@@ -106,35 +117,38 @@ export const DigitalAssetRegistration = () => {
           <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl p-8">
             <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
               <LayoutTemplate size={20} className="text-blue-500" />
-              Thông tin Metadata
+              Thông tin Biểu ghi gốc
             </h2>
             <div className="space-y-5">
-              {configs.map(config => (
-                <div key={config.id}>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    {config.fieldName} {config.isRequired && <span className="text-red-500">*</span>}
-                  </label>
-                  {config.dataType === 'Date' ? (
-                    <input 
-                      type="date"
-                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
-                      value={formData[config.fieldName] || ''}
-                      onChange={e => handleInputChange(config.fieldName, e.target.value)}
-                    />
-                  ) : (
-                    <input 
-                      type={config.dataType === 'Number' ? 'number' : 'text'}
-                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
-                      placeholder={`Nhập ${config.fieldName}...`}
-                      value={formData[config.fieldName] || ''}
-                      onChange={e => handleInputChange(config.fieldName, e.target.value)}
-                    />
-                  )}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Chọn biểu ghi thư mục (MARC 21) <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+                    value={selectedBibRecord}
+                    onChange={e => setSelectedBibRecord(e.target.value)}
+                  >
+                    <option value="">-- Chọn tài liệu giấy/biểu ghi gốc --</option>
+                    {bibRecords.map(record => (
+                      <option key={record.id} value={record.id}>
+                        {record.title} {record.author ? ` - ${record.author}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/admin/cataloging/create')}
+                    className="shrink-0 px-4 py-2.5 border border-primary-500 text-primary-600 dark:text-primary-400 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors font-medium whitespace-nowrap"
+                  >
+                    Thêm biểu ghi mới
+                  </button>
                 </div>
-              ))}
-              {configs.length === 0 && (
-                <div className="text-slate-500 italic text-sm py-4">Đang tải cấu hình metadata từ máy chủ...</div>
-              )}
+                <p className="text-xs text-slate-500 mt-2">
+                  Tài liệu số bắt buộc phải được gắn với một biểu ghi thư mục. Nếu là tài liệu số hóa, vui lòng chọn biểu ghi của bản giấy. Nếu là tài liệu số mới hoàn toàn, vui lòng tạo biểu ghi mới.
+                </p>
+              </div>
             </div>
           </div>
 

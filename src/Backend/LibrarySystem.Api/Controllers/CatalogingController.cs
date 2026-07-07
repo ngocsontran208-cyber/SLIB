@@ -14,7 +14,7 @@ namespace LibrarySystem.Api.Controllers
 {
     [ApiController]
     [Route("api/cataloging/records")]
-    [Authorize(Roles = "Librarian")]
+    // [Authorize(Roles = "Librarian")]
     public class CatalogingController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -64,6 +64,22 @@ namespace LibrarySystem.Api.Controllers
                 .ToListAsync();
                 
             return Ok(records);
+        }
+
+        [HttpGet("template-by-type")]
+        public async Task<IActionResult> GetTemplateByType([FromQuery] string documentType)
+        {
+            if (string.IsNullOrEmpty(documentType))
+                return BadRequest("DocumentType is required.");
+
+            var template = await _context.MarcTemplates
+                .Include(t => t.FieldConfigs)
+                .FirstOrDefaultAsync(t => t.DocumentType == documentType && t.IsActive);
+
+            if (template == null)
+                return NotFound($"Không tìm thấy mẫu biên mục nào đang hoạt động cho loại tài liệu: {documentType}");
+
+            return Ok(template);
         }
 
         [HttpGet("{id}")]

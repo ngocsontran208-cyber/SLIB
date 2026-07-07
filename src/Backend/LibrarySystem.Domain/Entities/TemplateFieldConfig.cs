@@ -7,7 +7,9 @@ namespace LibrarySystem.Domain.Entities
         public int Id { get; set; }
         
         public int TemplateId { get; set; }
-        public MarcTemplate Template { get; set; } = null!;
+        
+        [System.Text.Json.Serialization.JsonIgnore]
+        public MarcTemplate? Template { get; set; }
         
         /// <summary>
         /// Mã trường (Tag) lấy từ MarcDictionary

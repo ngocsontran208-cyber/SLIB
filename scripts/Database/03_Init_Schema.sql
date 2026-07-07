@@ -59,3 +59,31 @@ BEGIN
     );
 END
 GO
+
+-- 4. Bảng MarcTemplates (Mẫu biên mục MARC 21)
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MarcTemplates]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[MarcTemplates] (
+        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+        [Name] NVARCHAR(100) NOT NULL,
+        [DocumentType] NVARCHAR(50) NOT NULL DEFAULT 'Book',
+        [Description] NVARCHAR(255),
+        [IsActive] BIT DEFAULT 1,
+        [CreatedAt] DATETIME DEFAULT GETDATE()
+    );
+END
+GO
+
+-- 5. Bảng TemplateFieldConfigs (Cấu hình trường MARC cho Mẫu)
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TemplateFieldConfigs]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE [dbo].[TemplateFieldConfigs] (
+        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+        [TemplateId] INT NOT NULL FOREIGN KEY REFERENCES [dbo].[MarcTemplates](Id) ON DELETE CASCADE,
+        [Tag] NVARCHAR(3) NOT NULL,
+        [AllowedSubfields] NVARCHAR(MAX),
+        [IsRequired] BIT DEFAULT 0,
+        [DefaultValue] NVARCHAR(MAX)
+    );
+END
+GO

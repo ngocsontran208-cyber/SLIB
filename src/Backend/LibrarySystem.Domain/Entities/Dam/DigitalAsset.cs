@@ -15,7 +15,9 @@ namespace LibrarySystem.Domain.Entities.Dam
         public int? DrmPolicyId { get; set; }
         public DrmPolicy? DrmPolicy { get; set; }
         
-        public ICollection<DigitalAssetValue> MetadataValues { get; set; } = new List<DigitalAssetValue>();
+        // Link to MARC 21 Bibliographic Record
+        public int? BibliographicRecordId { get; set; }
+        public BibliographicRecord? BibliographicRecord { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

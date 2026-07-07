@@ -16,7 +16,9 @@ import {
   RotateCw,
   CreditCard,
   Printer,
-  Database
+  Database,
+  FileUp,
+  HardDrive
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -138,6 +140,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                 <NavLink to="/admin/cataloging/create" className={getNavLinkClass} title={t('create_record', 'Biên mục mới')}>
                   <BookPlus size={18} className="flex-shrink-0" />
                   {!isCollapsed && <span className="whitespace-nowrap">{t('create_record', 'Biên mục mới')}</span>}
+                </NavLink>
+              </li>
+            </ul>
+
+            {!isCollapsed ? (
+              <div className="px-6 mb-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap overflow-hidden">
+                {t('digital_assets_group', 'Tài liệu số')}
+              </div>
+            ) : <div className="mb-2 h-4 border-t border-slate-200 dark:border-slate-800/50 mx-4" />}
+            <ul className="space-y-1 px-3 mb-8">
+              <li>
+                <NavLink to="/admin/dam/assets" className={getNavLinkClass} title={t('digital_assets_list', 'Quản lý Tài liệu số')}>
+                  <HardDrive size={18} className="flex-shrink-0" />
+                  {!isCollapsed && <span className="whitespace-nowrap">{t('digital_assets_list', 'Quản lý Tài liệu số')}</span>}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/dam/register" className={getNavLinkClass} title={t('digital_assets_upload', 'Đăng tải Tài liệu')}>
+                  <FileUp size={18} className="flex-shrink-0" />
+                  {!isCollapsed && <span className="whitespace-nowrap">{t('digital_assets_upload', 'Đăng tải Tài liệu')}</span>}
                 </NavLink>
               </li>
             </ul>

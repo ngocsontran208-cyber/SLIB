@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Minus, Plus, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { AuthorityService } from '@slib/api-client';
 import type { AuthorityRecord } from '@slib/types';
+import { getSubfieldPlaceholder } from '../../../constants/marcFields';
 
 interface Props {
   fieldIndex: number;
   subfieldIndex: number;
-  removeSubfield: (index: number) => void;
-  insertSubfield: (index: number, data: any) => void;
   parentTag?: string;
+  tabIndexBase?: number;
 }
 
-export const MarcSubfieldRow: React.FC<Props> = ({ fieldIndex, subfieldIndex, removeSubfield, insertSubfield, parentTag }) => {
+export const MarcSubfieldRow: React.FC<Props> = ({ fieldIndex, subfieldIndex, parentTag, tabIndexBase = 0 }) => {
+  const { t } = useTranslation();
   const { register, watch, setValue } = useFormContext();
   const fieldName = `fields.${fieldIndex}.subfields.${subfieldIndex}`;
   
@@ -54,29 +56,27 @@ export const MarcSubfieldRow: React.FC<Props> = ({ fieldIndex, subfieldIndex, re
   }, []);
 
   return (
-    <div className="flex items-start gap-2 group relative">
-      <div className="flex flex-col items-center gap-1 mt-1">
-        <span className="font-mono text-slate-500 font-bold bg-slate-200 dark:bg-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded text-xs">
-          $
-        </span>
-      </div>
+    <div className="flex flex-1 items-start gap-1">
+      <div className="pt-2 text-slate-400 font-bold font-mono text-xs select-none pl-1">$</div>
       
       <input 
         type="text"
         maxLength={1}
         placeholder="a"
         {...register(`${fieldName}.code`, { required: true })}
-        className="w-10 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1.5 text-sm text-center font-mono focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+        tabIndex={tabIndexBase}
+        className="w-8 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-1 py-1 mt-1 text-sm text-center font-mono focus:border-primary-500 focus:ring-1 focus:outline-none"
       />
       
-      <div className="flex-1 relative" ref={wrapperRef}>
+      <div className="flex-1 relative mt-1" ref={wrapperRef}>
         <div className="relative">
           <textarea
-            placeholder="Giá trị subfield..."
+            placeholder={getSubfieldPlaceholder(parentTag || '', codeValue || '', t)}
             rows={1}
             {...register(`${fieldName}.value`)}
+            tabIndex={tabIndexBase + 1}
             onFocus={() => needsSuggest && setShowSuggestions(true)}
-            className={`w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm resize-y min-h-[36px] max-h-32 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${needsSuggest ? 'pr-8' : ''}`}
+            className={`w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1 text-sm resize-y min-h-[32px] max-h-32 focus:border-primary-500 focus:ring-1 focus:outline-none ${needsSuggest ? 'pr-8' : ''}`}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = 'auto';
@@ -84,7 +84,7 @@ export const MarcSubfieldRow: React.FC<Props> = ({ fieldIndex, subfieldIndex, re
             }}
           />
           {needsSuggest && (
-            <Search size={14} className="absolute right-3 top-2.5 text-slate-400" />
+            <Search size={14} className="absolute right-3 top-2 text-slate-400" />
           )}
         </div>
 
@@ -92,7 +92,7 @@ export const MarcSubfieldRow: React.FC<Props> = ({ fieldIndex, subfieldIndex, re
         {showSuggestions && suggestions.length > 0 && (
           <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
             <div className="px-3 py-2 text-xs font-bold text-slate-400 border-b border-slate-100 dark:border-slate-700 uppercase">
-              Gợi ý từ Authority
+              {t('authority_suggestions')}
             </div>
             {suggestions.map(s => (
               <button
@@ -110,25 +110,6 @@ export const MarcSubfieldRow: React.FC<Props> = ({ fieldIndex, subfieldIndex, re
             ))}
           </div>
         )}
-      </div>
-      
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button 
-          type="button" 
-          onClick={() => insertSubfield(subfieldIndex + 1, { code: '', value: '' })}
-          className="p-1.5 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md"
-          title="Thêm subfield bên dưới"
-        >
-          <Plus size={14} />
-        </button>
-        <button 
-          type="button" 
-          onClick={() => removeSubfield(subfieldIndex)}
-          className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md"
-          title="Xóa subfield"
-        >
-          <Minus size={14} />
-        </button>
       </div>
     </div>
   );

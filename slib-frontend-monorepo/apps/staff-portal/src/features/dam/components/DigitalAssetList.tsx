@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { api } from '@slib/api-client';
 import { useSignalR } from '../../../hooks/useSignalR';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-const HUB_URL = 'https://localhost:7219/hubs/notification'; // Should be configured via env normally
+const HUB_URL = `${api.defaults.baseURL || 'http://localhost:5132'}/hubs/notification`;
 
 export const DigitalAssetList: React.FC = () => {
+  const { t } = useTranslation();
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +39,7 @@ export const DigitalAssetList: React.FC = () => {
     // Ưu tiên trạng thái từ SignalR (nếu đang xử lý)
     const statusObj = assetStatuses[assetId];
     if (!statusObj) {
-      return <span className="px-2 py-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-full text-xs font-medium">Sẵn sàng / Chưa cập nhật</span>;
+      return <span className="px-2 py-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 rounded-full text-xs font-medium">{t('dam_status_ready_unknown', 'Sẵn sàng / Chưa cập nhật')}</span>;
     }
 
     const { status, message } = statusObj;
@@ -78,7 +80,7 @@ export const DigitalAssetList: React.FC = () => {
         <div className="flex-1 w-full relative">
           <input 
             type="text" 
-            placeholder="Tìm kiếm theo tên file..." 
+            placeholder={t('dam_search_placeholder', 'Tìm kiếm theo tên file...')} 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm focus:border-primary-500 outline-none"
@@ -93,7 +95,7 @@ export const DigitalAssetList: React.FC = () => {
             onChange={e => setFormatFilter(e.target.value)}
             className="px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300"
           >
-            <option value="">Tất cả định dạng</option>
+            <option value="">{t('dam_all_formats', 'Tất cả định dạng')}</option>
             {formats.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
           
@@ -102,11 +104,11 @@ export const DigitalAssetList: React.FC = () => {
             onChange={e => setStatusFilter(e.target.value)}
             className="px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300"
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="Ready">Sẵn sàng / Đã hoàn tất</option>
-            <option value="Processing">Đang chờ xử lý</option>
-            <option value="Thumbnail">Đang trích xuất ảnh</option>
-            <option value="OCR">Đang phân tích OCR</option>
+            <option value="">{t('dam_all_statuses', 'Tất cả trạng thái')}</option>
+            <option value="Ready">{t('dam_status_completed', 'Sẵn sàng / Đã hoàn tất')}</option>
+            <option value="Processing">{t('dam_status_processing', 'Đang chờ xử lý')}</option>
+            <option value="Thumbnail">{t('dam_status_thumbnail', 'Đang trích xuất ảnh')}</option>
+            <option value="OCR">{t('dam_status_ocr', 'Đang phân tích OCR')}</option>
           </select>
         </div>
       </div>
@@ -116,17 +118,22 @@ export const DigitalAssetList: React.FC = () => {
         <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
           <tr>
             <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tên File</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Định dạng</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Dung lượng</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Trạng thái (Real-time)</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('file_name', 'Tên File')}</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('format', 'Định dạng')}</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('size', 'Kích thước')}</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('upload_date', 'Ngày tải lên')}</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{t('status', 'Trạng thái xử lý')}</th>
+            <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">{t('action', 'Thao tác')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
           {filteredAssets.map((asset) => (
             <tr key={asset.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
               <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-400 font-mono">#{asset.id}</td>
-              <td className="px-4 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">{asset.title}</td>
+              <td className="px-4 py-4 text-sm font-medium text-slate-900 dark:text-slate-100">
+                {asset.title}
+                {asset.author && <div className="text-xs text-slate-500 mt-1 font-normal">{asset.author}</div>}
+              </td>
               <td className="px-4 py-4 text-sm">
                 <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded font-mono text-[10px]">
                   {asset.mimeType}
@@ -135,15 +142,22 @@ export const DigitalAssetList: React.FC = () => {
               <td className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">
                 {(asset.fileSize / 1024 / 1024).toFixed(2)} MB
               </td>
+              <td className="px-4 py-4 text-sm text-slate-500 dark:text-slate-400">
+                {new Date(asset.createdAt).toLocaleDateString()}
+              </td>
               <td className="px-4 py-4">
                 {getStatusBadge(asset.id)}
+              </td>
+              <td className="px-4 py-4 text-center">
+                <button className="text-primary-600 hover:text-primary-700 text-sm font-medium mr-3">{t('view', 'Xem')}</button>
+                <button className="text-red-500 hover:text-red-700 text-sm font-medium">{t('delete', 'Xóa')}</button>
               </td>
             </tr>
           ))}
           {filteredAssets.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                {assets.length === 0 ? 'Chưa có tài nguyên số nào.' : 'Không tìm thấy kết quả phù hợp.'}
+              <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                {assets.length === 0 ? t('no_digital_assets', 'Chưa có tài nguyên số nào.') : t('no_results_found', 'Không tìm thấy kết quả phù hợp.')}
               </td>
             </tr>
           )}

@@ -42,6 +42,11 @@ export const damService = {
     });
     return res.data;
   },
+
+  // Register Asset Metadata
+  registerDigitalAsset: async (data: { assetIds: number[], drmPolicyId: number, bibliographicRecordId: number }): Promise<void> => {
+    await api.post('/api/digital-asset/register', data);
+  },
 };
 
 export const uploadService = {
@@ -61,7 +66,7 @@ export const uploadService = {
       },
     });
   },
-  completeUpload: async (sessionId: string): Promise<{ message: string, filePath: string, checksum: string }> => {
+  completeUpload: async (sessionId: string): Promise<{ message: string, filePath: string, checksum: string, assetId: number }> => {
     const formData = new FormData();
     formData.append('sessionId', sessionId);
     const res = await api.post('/api/upload/complete', formData, {

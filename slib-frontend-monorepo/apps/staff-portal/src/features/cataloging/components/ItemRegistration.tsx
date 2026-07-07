@@ -48,7 +48,7 @@ export const ItemRegistration: React.FC = () => {
       setItems(itemsRes.data);
     } catch (error) {
       console.error(error);
-      toast({ variant: "destructive", title: "Lỗi tải dữ liệu", description: "Không thể tải dữ liệu Biểu ghi." });
+      toast({ variant: "destructive", title: t('data_load_error'), description: t('cannot_load_record') });
       navigate('/admin/cataloging/records');
     } finally {
       setLoading(false);
@@ -69,22 +69,22 @@ export const ItemRegistration: React.FC = () => {
       // Tải lại danh sách
       const itemsRes = await api.get(`/api/items/record/${recordId}`);
       setItems(itemsRes.data);
-      toast({ title: "Thành công", description: "Đã thêm đăng ký cá biệt mới." });
+      toast({ title: t('success'), description: t('item_added_success') });
     } catch (error: any) {
       console.error(error);
-      toast({ variant: "destructive", title: "Lỗi thêm mới", description: error.response?.data || "Có thể mã vạch đã bị trùng." });
+      toast({ variant: "destructive", title: t('add_error'), description: error.response?.data || t('barcode_duplicate_error') });
     }
   };
 
   const handleDeleteItem = async (itemId: number) => {
-    if (!window.confirm("Bạn có chắc muốn xóa tài liệu này?")) return;
+    if (!window.confirm(t('confirm_delete_item'))) return;
     try {
       await api.delete(`/api/items/${itemId}`);
       setItems(items.filter(i => i.id !== itemId));
-      toast({ title: "Thành công", description: "Đã xoá tài liệu." });
+      toast({ title: t('success'), description: t('item_deleted_success') });
     } catch (error: any) {
       console.error(error);
-      toast({ variant: "destructive", title: "Lỗi xoá tài liệu", description: error.response?.data || "Không thể xóa (có thể do đang có người mượn)." });
+      toast({ variant: "destructive", title: t('delete_item_error'), description: error.response?.data || t('delete_item_in_use') });
     }
   };
 
@@ -119,8 +119,8 @@ export const ItemRegistration: React.FC = () => {
       <div className="bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/30 rounded-xl p-5">
         <h3 className="font-bold text-lg text-primary-900 dark:text-primary-100 mb-2">{record?.title}</h3>
         <div className="text-primary-700 dark:text-primary-400 text-sm flex gap-4">
-          <span><strong>Tác giả:</strong> {record?.author || 'N/A'}</span>
-          <span><strong>ID Biểu ghi:</strong> #{record?.id}</span>
+          <span><strong>{t('record_author')}:</strong> {record?.author || 'N/A'}</span>
+          <span><strong>{t('record_id')}:</strong> #{record?.id}</span>
         </div>
       </div>
 
@@ -131,7 +131,7 @@ export const ItemRegistration: React.FC = () => {
               <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text" 
-                placeholder="Nhập Mã vạch (Barcode) / Số đăng ký cá biệt..." 
+                placeholder={t('enter_barcode')} 
                 className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 outline-none focus:border-primary-500 transition-colors"
                 value={newBarcode}
                 onChange={e => setNewBarcode(e.target.value)}
@@ -155,7 +155,7 @@ export const ItemRegistration: React.FC = () => {
               <th className="p-4 font-bold w-16 text-center">STT</th>
               <th className="p-4 font-bold">{t('barcode')}</th>
               <th className="p-4 font-bold">{t('item_status')}</th>
-              <th className="p-4 font-bold w-24 text-center">Xóa</th>
+              <th className="p-4 font-bold w-24 text-center">{t('delete')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
@@ -184,7 +184,7 @@ export const ItemRegistration: React.FC = () => {
             {items.length === 0 && (
               <tr>
                 <td colSpan={4} className="p-12 text-center text-slate-500">
-                  Chưa có bản sao vật lý nào. Nhập mã vạch bên trên để thêm!
+                  {t('no_items_yet')}
                 </td>
               </tr>
             )}

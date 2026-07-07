@@ -12,14 +12,15 @@ interface FieldConfig {
   allowedSubfields?: string;
   isRequired: boolean;
   defaultValue?: string;
-  description?: string; // For UI display only
+  descriptionKey?: string; // For UI display only
 }
 
 // Default standard MARC21 fields for new templates
 const DEFAULT_FIELDS: FieldConfig[] = ALL_MARC_FIELDS.map(f => ({
   tag: f.tag,
+  allowedSubfields: f.subfields ? JSON.stringify(f.subfields) : undefined,
   isRequired: f.tag === '245', // Only title is required by default
-  description: f.description
+  descriptionKey: f.descriptionKey
 }));
 
 export const MarcTemplateForm: React.FC = () => {
@@ -33,6 +34,7 @@ export const MarcTemplateForm: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    documentType: 'Book',
     description: '',
     isActive: true
   });
@@ -51,6 +53,7 @@ export const MarcTemplateForm: React.FC = () => {
           if (template) {
             setFormData({
               name: template.name,
+              documentType: template.documentType || 'Book',
               description: template.description || '',
               isActive: template.isActive
             });
@@ -61,7 +64,7 @@ export const MarcTemplateForm: React.FC = () => {
               allowedSubfields: f.allowedSubfields,
               isRequired: f.isRequired,
               defaultValue: f.defaultValue,
-              description: DEFAULT_FIELDS.find(df => df.tag === f.tag)?.description || ''
+              descriptionKey: DEFAULT_FIELDS.find(df => df.tag === f.tag)?.descriptionKey || ''
             })));
           } else {
             navigate('/admin/marc-templates');
@@ -123,11 +126,11 @@ export const MarcTemplateForm: React.FC = () => {
   const addCustomField = () => {
     const tag = window.prompt("Nhập mã trường (Tag), ví dụ: 856");
     if (tag && tag.length === 3 && !isNaN(Number(tag))) {
-      if (fields.some(f => f.tag === tag)) {
+      if (fields.find(f => f.tag === tag)) {
         toast({ variant: "destructive", title: "Lỗi", description: "Trường này đã có trong danh sách!" });
         return;
       }
-      setFields([...fields, { tag, isRequired: false, description: 'Custom Field' }]);
+      setFields([...fields, { tag, isRequired: false, descriptionKey: 'custom_field' }]);
     } else if (tag) {
       toast({ variant: "destructive", title: "Lỗi", description: "Mã trường phải gồm 3 chữ số!" });
     }
@@ -172,6 +175,20 @@ export const MarcTemplateForm: React.FC = () => {
                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:outline-none focus:border-primary-500"
                 required
               />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Loại tài liệu (Document Type) <span className="text-red-500">*</span></label>
+              <select 
+                value={formData.documentType}
+                onChange={(e) => setFormData({...formData, documentType: e.target.value})}
+                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:outline-none focus:border-primary-500"
+                required
+              >
+                <option value="Book">Sách (Book)</option>
+                <option value="Journal">Tạp chí (Journal)</option>
+                <option value="Thesis">Luận văn (Thesis)</option>
+              </select>
             </div>
             
             <div>
@@ -247,7 +264,7 @@ export const MarcTemplateForm: React.FC = () => {
                         {field.tag}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium">{field.description || 'Custom Field'}</span>
+                        <span className="font-medium">{field.descriptionKey ? t(field.descriptionKey) : t('custom_field')}</span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <input

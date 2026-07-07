@@ -6,6 +6,7 @@ import api from '@slib/api-client';
 import { BookPlus, Save, ArrowLeft, Search, Network } from 'lucide-react';
 import { MarcFieldList } from './MarcFieldList';
 import { useToast } from '@slib/ui-core';
+import { ALL_MARC_FIELDS } from '../../../constants/marcFields';
 
 interface CatalogingFormValues {
   templateId: number;
@@ -31,7 +32,7 @@ export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bi
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [documentType, setDocumentType] = useState<string>('Book');
   const [sruTargets, setSruTargets] = useState<any[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<number>(0);
   const [isbn, setIsbn] = useState('');
@@ -48,19 +49,10 @@ export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bi
   const { register, handleSubmit, watch, reset, setValue, formState: { isDirty, errors } } = methods;
   const watchTemplateId = watch('templateId');
 
-  // Cảnh báo khi rời trang nếu có thay đổi chưa lưu
-  // [DISABLED] useBlocker yêu cầu Data Router (createBrowserRouter) thay vì BrowserRouter.
-  // useBlocker(({ currentLocation, nextLocation }) => {
-  //   if (isDirty && currentLocation.pathname !== nextLocation.pathname) {
-  //     return !window.confirm('Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang này?');
-  //   }
-  //   return false;
-  // });
-
   // Hotkeys: Ctrl + Enter để lưu nhanh
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleSubmit(onSubmit)();
       }
@@ -70,18 +62,11 @@ export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bi
   }, [handleSubmit]);
 
   useEffect(() => {
-    fetchTemplates();
     fetchSruTargets();
-  }, []);
-
-  const fetchTemplates = async () => {
-    try {
-      const res = await api.get('/api/admin/marc/templates');
-      setTemplates(res.data);
-    } catch (error) {
-      console.error(error);
+    if (recordType === 'bibliographic') {
+      loadTemplateByType('Book');
     }
-  };
+  }, []);
 
   const fetchSruTargets = async () => {
     try {
@@ -95,21 +80,56 @@ export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bi
     }
   };
 
-  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const tid = Number(e.target.value);
-    setValue('templateId', tid, { shouldValidate: true });
-    const tpl = templates.find(t => t.id === tid);
-    if (tpl) {
-      const initialFields = tpl.fields.map((f: any) => ({
-        tag: f.tag,
-        indicator1: '',
-        indicator2: '',
-        subfields: f.allowedSubfields.split(',').map((code: string) => ({ code: code.trim(), value: '' }))
-      }));
+  const loadTemplateByType = async (type: string) => {
+    setDocumentType(type);
+    if (!type) {
+      setValue('templateId', 0);
+      setValue('fields', []);
+      return;
+    }
+    
+    try {
+      const res = await api.get(`/api/cataloging/records/template-by-type?documentType=${type}`);
+      const tpl = res.data;
+      setValue('templateId', tpl.id, { shouldValidate: true });
+      
+      const initialFields = tpl.fieldConfigs.map((f: any) => {
+        let parsedSubfields = ['a'];
+        if (f.allowedSubfields) {
+          try {
+            const parsed = JSON.parse(f.allowedSubfields);
+            if (Array.isArray(parsed)) {
+              parsedSubfields = parsed;
+            }
+          } catch (e) {
+            console.warn('Failed to parse allowedSubfields', f.allowedSubfields);
+          }
+        } else {
+          const def = ALL_MARC_FIELDS.find(df => df.tag === f.tag);
+          if (def && def.subfields) {
+            parsedSubfields = def.subfields;
+          }
+        }
+
+        return {
+          tag: f.tag,
+          indicator1: '',
+          indicator2: '',
+          isRequired: f.isRequired,
+          subfields: parsedSubfields.map((code: string) => ({ code: code.trim(), value: '' }))
+        };
+      });
       setValue('fields', initialFields);
-    } else {
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: t('error'), description: t('template_not_found') });
+      setValue('templateId', 0);
       setValue('fields', []);
     }
+  };
+
+  const handleDocumentTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    loadTemplateByType(e.target.value);
   };
 
   const handleFetchZ3950 = async () => {
@@ -118,37 +138,20 @@ export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bi
       const res = await api.get(`/api/cataloging/records/search-online?targetId=${selectedTarget}&templateId=${watchTemplateId}&isbn=${isbn}`);
       
       const newFields = res.data.marcData;
-      let newTitle = '';
-      let newAuthor = '';
-
-      const field245 = newFields.find((f: any) => f.tag === '245');
-      if (field245) {
-        const subA = field245.subfields.find((s: any) => s.code === 'a');
-        if (subA) newTitle = subA.value;
-      }
-      
-      const field100 = newFields.find((f: any) => f.tag === '100');
-      if (field100) {
-        const subA = field100.subfields.find((s: any) => s.code === 'a');
-        if (subA) newAuthor = subA.value;
-      }
-
       reset({
         templateId: watchTemplateId,
-        title: newTitle,
-        author: newAuthor,
         fields: newFields
       });
-      toast({ title: "Thành công", description: "Đã tải dữ liệu từ Z39.50/SRU." });
+      toast({ title: t('success'), description: t('fetch_z3950_success') });
     } catch (error) {
-      console.error("Z39.50 Fetch Error", error);
-      toast({ variant: "destructive", title: "Lỗi tìm kiếm", description: "Không tìm thấy dữ liệu ISBN trên Z39.50/SRU target này." });
+      console.error(error);
+      toast({ variant: "destructive", title: t('search_error'), description: t('z3950_not_found') });
     }
   };
 
   const onSubmit = async (data: CatalogingFormValues) => {
     if (!data.templateId) {
-      toast({ variant: "destructive", title: "Lỗi xác thực", description: "Vui lòng chọn Mẫu Biên Mục." });
+      toast({ variant: "destructive", title: t('validation_error'), description: t('template_required') });
       return;
     }
     
@@ -160,153 +163,118 @@ export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bi
       }))
       .filter(f => f.tag.trim() !== '' && f.subfields.length > 0);
 
+    const field245 = cleanedFields.find(f => f.tag === '245');
+    const title = field245?.subfields.find(s => s.code === 'a')?.value || '';
+
+    const field100 = cleanedFields.find(f => f.tag === '100');
+    const author = field100?.subfields.find(s => s.code === 'a')?.value || '';
+
+    if (!title) {
+      toast({ variant: "destructive", title: t('missing_data'), description: t('missing_title') });
+      return;
+    }
+
     const payload = {
-      ...data,
+      templateId: data.templateId,
+      title: title,
+      author: author,
       fields: cleanedFields
     };
 
     try {
       await api.post('/api/cataloging/records', payload);
-      toast({ title: "Thành công", description: "Đã lưu biểu ghi thành công." });
+      toast({ title: t('success'), description: t('record_saved_successfully') });
       navigate('/admin/cataloging/records');
     } catch (error) {
       console.error(error);
-      toast({ variant: "destructive", title: "Lỗi hệ thống", description: "Lỗi khi lưu biểu ghi. Vui lòng kiểm tra lại dữ liệu MARC." });
+      toast({ variant: "destructive", title: t('system_error'), description: t('save_record_error') });
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20">
+    <div className="w-full space-y-4 pb-32">
       
-      {/* Header Sticky */}
-      <div className="sticky top-16 z-20 glass px-6 py-4 -mx-6 mb-6 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate(-1)}
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+      {/* Toolbar Header Sticky */}
+      <div className="sticky -top-6 md:-top-8 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 md:px-8 py-3 flex flex-wrap items-center gap-4 shadow-sm -mx-6 md:-mx-8 mb-6">
+        <button 
+          onClick={() => navigate(-1)}
+          className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div className="font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap flex items-center gap-2">
+          <BookPlus className="text-primary-500" size={18} />
+          {recordType === 'authority' ? t('authority_record') : t('create_record')}
+        </div>
+        
+        <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-2 hidden md:block"></div>
+        
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          <select 
+            className={`text-sm border rounded px-3 py-1.5 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-primary-500 ${errors.templateId ? 'border-red-500' : 'border-slate-300 dark:border-slate-700'}`}
+            value={documentType}
+            onChange={handleDocumentTypeChange}
+            tabIndex={1}
           >
-            <ArrowLeft size={24} />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
-              <BookPlus className="text-primary-500" />
-              {recordType === 'authority' ? 'Biên mục Chuẩn (Authority)' : t('create_record', 'Biên mục mới')}
-            </h1>
+            <option value="">{t('choose_document_type')}</option>
+            <option value="Book">{t('doc_type_book')}</option>
+            <option value="Journal">{t('doc_type_journal')}</option>
+            <option value="Thesis">{t('doc_type_thesis')}</option>
+          </select>
+
+          <select className="text-sm border border-slate-300 dark:border-slate-700 rounded px-3 py-1.5 bg-slate-50 dark:bg-slate-800 focus:outline-none">
+            <option>{t('cataloging_status_draft')}</option>
+            <option>{t('cataloging_status_approved')}</option>
+          </select>
+          
+          <div className="flex-1"></div>
+
+          {/* Z39.50 Inline */}
+          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-md border border-slate-200 dark:border-slate-700">
+            <Search size={14} className="text-slate-400 ml-2" />
+            <select 
+              className="text-xs bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-300"
+              value={selectedTarget}
+              onChange={(e) => setSelectedTarget(Number(e.target.value))}
+            >
+              {sruTargets.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <input 
+              type="text"
+              placeholder={t('enter_isbn')}
+              className="text-xs border-l border-slate-300 dark:border-slate-600 bg-transparent px-2 w-28 focus:outline-none"
+              value={isbn}
+              onChange={e => setIsbn(e.target.value)}
+            />
+            <button 
+              type="button"
+              onClick={handleFetchZ3950}
+              className="bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 px-3 py-1 rounded text-xs font-bold border border-slate-200 dark:border-slate-600 transition-colors"
+            >
+              {t('fetch')}
+            </button>
           </div>
         </div>
-        <button 
-          onClick={handleSubmit(onSubmit)}
-          className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-primary-500/20 transition-all"
-        >
-          <Save size={18} />
-          {recordType === 'authority' ? 'Lưu Bản ghi Chuẩn' : t('save_record', 'Lưu biểu ghi')}
-        </button>
       </div>
 
       <FormProvider {...methods}>
-        <form className="space-y-6">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Top Left: Template and Basic Info */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
-              <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <Network size={18} className="text-slate-500" />
-                Metadata Mặc Định
-              </h3>
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Mẫu Biên Mục (*)</label>
-                <select 
-                  className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:ring-1 focus:outline-none ${errors.templateId ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-primary-500'}`}
-                  value={watchTemplateId || ''}
-                  onChange={handleTemplateChange}
-                >
-                  <option value="">-- Chọn Mẫu --</option>
-                  {templates.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-                {errors.templateId && <p className="text-red-500 text-xs mt-1">Vui lòng chọn mẫu biên mục.</p>}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Nhan đề (*)</label>
-                  <input 
-                    type="text" 
-                    {...register('title', { required: 'Nhan đề không được để trống' })}
-                    className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:ring-1 focus:outline-none ${errors.title ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-primary-500'}`}
-                  />
-                  {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message as string}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Tác giả</label>
-                  <input 
-                    type="text" 
-                    {...register('author')}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Top Right: Z39.50 Tool */}
-            <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm transition-opacity ${!watchTemplateId ? 'opacity-50 pointer-events-none' : ''}`}>
-              <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-4">
-                <Search size={18} className="text-slate-500" />
-                Nhập liệu tự động (Z39.50)
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Thư viện nguồn</label>
-                  <select 
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                    value={selectedTarget}
-                    onChange={(e) => setSelectedTarget(Number(e.target.value))}
-                  >
-                    {sruTargets.map(t => (
-                      <option key={t.id} value={t.id}>{t.name} ({t.baseUrl})</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">ISBN</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      placeholder="VD: 9781234567890"
-                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-                      value={isbn}
-                      onChange={e => setIsbn(e.target.value)}
-                    />
-                    <button 
-                      type="button"
-                      onClick={handleFetchZ3950}
-                      className="bg-slate-800 dark:bg-slate-700 text-white px-4 rounded-lg font-bold hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors whitespace-nowrap"
-                    >
-                      Kéo Dữ Liệu
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* MARC Records Form Array */}
+        <form className="px-4 max-w-[1400px] mx-auto space-y-4">
           <div className={!watchTemplateId ? 'opacity-50 pointer-events-none' : ''}>
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">
-              Bảng dữ liệu MARC 21
-            </h3>
-            
             <MarcFieldList />
-            
           </div>
           
         </form>
       </FormProvider>
+
+      {/* FAB Save Button */}
+      <button 
+        onClick={handleSubmit(onSubmit)}
+        className="fixed bottom-8 right-8 bg-primary-600 hover:bg-primary-700 text-white rounded-full px-6 py-4 shadow-2xl flex items-center gap-2 hover:scale-105 transition-transform z-50 focus:outline-none focus:ring-4 focus:ring-primary-500/50"
+        title="Cmd + S"
+      >
+        <Save size={20} />
+        <span className="font-bold">{t('save_record')}</span>
+      </button>
 
     </div>
   );

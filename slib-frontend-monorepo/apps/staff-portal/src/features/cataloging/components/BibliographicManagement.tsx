@@ -62,7 +62,7 @@ export const BibliographicManagement: React.FC = () => {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
-              placeholder="Tìm kiếm Nhan đề, Tác giả..." 
+              placeholder={t('search_title_author')} 
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm font-medium placeholder:text-slate-400"
             />
           </div>
@@ -79,7 +79,7 @@ export const BibliographicManagement: React.FC = () => {
                   <th className="p-5 font-bold border-b border-slate-100 dark:border-slate-800/60">{t('record_title')}</th>
                   <th className="p-5 font-bold border-b border-slate-100 dark:border-slate-800/60">{t('record_author')}</th>
                   <th className="p-5 font-bold border-b border-slate-100 dark:border-slate-800/60">{t('created_date')}</th>
-                  <th className="p-5 font-bold text-right border-b border-slate-100 dark:border-slate-800/60">Thao tác</th>
+                  <th className="p-5 font-bold text-right border-b border-slate-100 dark:border-slate-800/60">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/50 text-slate-700 dark:text-slate-300">
@@ -106,7 +106,7 @@ export const BibliographicManagement: React.FC = () => {
                         <button 
                           onClick={() => navigate(`/admin/cataloging/items/${record.id}`)}
                           className="px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 dark:hover:border-primary-500 text-slate-600 hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-400 shadow-sm rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
-                          title="Đăng ký cá biệt (Items)"
+                          title={t('register_items')}
                         >
                           <Barcode size={14} />
                           Items
@@ -118,7 +118,7 @@ export const BibliographicManagement: React.FC = () => {
                 {records.length === 0 && (
                   <tr>
                     <td colSpan={5} className="p-12 text-center text-slate-500">
-                      Chưa có biểu ghi nào. Hãy tạo một Biểu ghi mới!
+                      {t('no_records_found')}
                     </td>
                   </tr>
                 )}

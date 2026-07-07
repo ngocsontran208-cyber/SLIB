@@ -44,14 +44,33 @@ namespace LibrarySystem.Infrastructure.Services.Marc
 
             var inputTags = marcFields.Select(f => f.Tag).Where(t => !string.IsNullOrEmpty(t)).ToHashSet();
 
-            // 1. Kiểm tra các trường bắt buộc
+            // 1. Kiểm tra các trường bắt buộc và giá trị trống
             var requiredConfigs = template.FieldConfigs.Where(c => c.IsRequired).ToList();
             foreach (var req in requiredConfigs)
             {
-                if (!inputTags.Contains(req.Tag))
+                var inputField = marcFields.FirstOrDefault(f => f.Tag == req.Tag);
+                if (inputField == null)
                 {
                     result.IsValid = false;
-                    result.Errors.Add($"Missing required MARC tag: {req.Tag}");
+                    
+                    // Thông báo lỗi tùy chỉnh theo Loại tài liệu (Cross-validation)
+                    if (template.DocumentType == "Thesis" && req.Tag == "502")
+                        result.Errors.Add($"Luận văn bắt buộc phải có trường 502 (Ghi chú luận án).");
+                    else
+                        result.Errors.Add($"Mẫu '{template.Name}' bắt buộc phải có trường {req.Tag}.");
+                }
+                else
+                {
+                    // Kiểm tra rỗng (Empty Value Check)
+                    bool hasValue = false;
+                    if (inputField.Subfields != null && inputField.Subfields.Any(s => !string.IsNullOrWhiteSpace(s.Value)))
+                        hasValue = true;
+
+                    if (!hasValue)
+                    {
+                        result.IsValid = false;
+                        result.Errors.Add($"Trường bắt buộc {req.Tag} không được để trống giá trị.");
+                    }
                 }
             }
 

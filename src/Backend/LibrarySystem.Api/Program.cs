@@ -20,6 +20,7 @@ builder.Services.AddControllers().AddJsonOptions(x =>
     x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
 
 // Cấu hình CORS
 builder.Services.AddCors(options =>

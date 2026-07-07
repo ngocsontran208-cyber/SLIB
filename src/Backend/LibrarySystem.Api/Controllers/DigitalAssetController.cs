@@ -38,54 +38,6 @@ namespace LibrarySystem.Api.Controllers
             _cache = cache;
         }
 
-        #region Metadata Config (Admin)
-
-        [HttpGet("metadata-configs")]
-        // [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetMetadataConfigs()
-        {
-            if (!_cache.TryGetValue("MetadataConfigs", out var configs))
-            {
-                configs = await _context.AssetMetadataConfigs.ToListAsync();
-                _cache.Set("MetadataConfigs", configs, TimeSpan.FromHours(1));
-            }
-            return Ok(configs);
-        }
-
-        [HttpPost("metadata-configs")]
-        // [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateMetadataConfig([FromBody] AssetMetadataConfig config)
-        {
-            _context.AssetMetadataConfigs.Add(config);
-            await _context.SaveChangesAsync();
-            _cache.Remove("MetadataConfigs");
-            return CreatedAtAction(nameof(GetMetadataConfigs), new { id = config.Id }, config);
-        }
-
-        [HttpPut("metadata-configs/{id}")]
-        // [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateMetadataConfig(int id, [FromBody] AssetMetadataConfig config)
-        {
-            if (id != config.Id) return BadRequest();
-            _context.Entry(config).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            _cache.Remove("MetadataConfigs");
-            return NoContent();
-        }
-
-        [HttpDelete("metadata-configs/{id}")]
-        // [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteMetadataConfig(int id)
-        {
-            var config = await _context.AssetMetadataConfigs.FindAsync(id);
-            if (config == null) return NotFound();
-            _context.AssetMetadataConfigs.Remove(config);
-            await _context.SaveChangesAsync();
-            _cache.Remove("MetadataConfigs");
-            return NoContent();
-        }
-
-        #endregion
 
         #region DRM Policy (Admin)
 
@@ -142,10 +94,12 @@ namespace LibrarySystem.Api.Controllers
         public async Task<IActionResult> GetDigitalAssets()
         {
             var assets = await _context.DigitalAssets
+                .Include(a => a.BibliographicRecord)
                 .Select(a => new
                 {
                     a.Id,
-                    a.Title,
+                    Title = a.BibliographicRecord != null ? a.BibliographicRecord.Title : a.Title,
+                    Author = a.BibliographicRecord != null ? a.BibliographicRecord.Author : "",
                     a.MimeType,
                     a.FileSize,
                     a.CreatedAt
@@ -162,6 +116,35 @@ namespace LibrarySystem.Api.Controllers
             
             var results = await _elasticsearchService.SearchDigitalAssetAsync(q);
             return Ok(results);
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterMetadata([FromBody] RegisterAssetMetadataRequest request)
+        {
+            var assets = await _context.DigitalAssets
+                .Where(a => request.AssetIds.Contains(a.Id))
+                .ToListAsync();
+
+            var bibRecordExists = await _context.BibliographicRecords.AnyAsync(r => r.Id == request.BibliographicRecordId);
+            if (!bibRecordExists)
+            {
+                return BadRequest("Biểu ghi thư mục không tồn tại.");
+            }
+
+            foreach (var asset in assets)
+            {
+                asset.DrmPolicyId = request.DrmPolicyId;
+                asset.BibliographicRecordId = request.BibliographicRecordId;
+            }
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Linked to Bibliographic Record and DRM Policy saved successfully." });
+        }
+
+        public class RegisterAssetMetadataRequest
+        {
+            public List<int> AssetIds { get; set; } = new List<int>();
+            public int DrmPolicyId { get; set; }
+            public int BibliographicRecordId { get; set; }
         }
 
         #endregion

@@ -67,9 +67,7 @@ namespace LibrarySystem.Infrastructure.Data
         public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
 
         // Digital Asset Management (DAM)
-        public DbSet<AssetMetadataConfig> AssetMetadataConfigs { get; set; }
         public DbSet<DigitalAsset> DigitalAssets { get; set; }
-        public DbSet<DigitalAssetValue> DigitalAssetValues { get; set; }
         public DbSet<DrmPolicy> DrmPolicies { get; set; }
         public DbSet<AssetAccessLog> AssetAccessLogs { get; set; }
 
@@ -283,17 +281,7 @@ namespace LibrarySystem.Infrastructure.Data
                 .HasForeignKey(da => da.DrmPolicyId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            modelBuilder.Entity<DigitalAssetValue>()
-                .HasOne(dav => dav.Asset)
-                .WithMany(da => da.MetadataValues)
-                .HasForeignKey(dav => dav.AssetId)
-                .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<DigitalAssetValue>()
-                .HasOne(dav => dav.Config)
-                .WithMany(c => c.Values)
-                .HasForeignKey(dav => dav.ConfigId)
-                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<AssetAccessLog>()
                 .HasOne(log => log.Asset)

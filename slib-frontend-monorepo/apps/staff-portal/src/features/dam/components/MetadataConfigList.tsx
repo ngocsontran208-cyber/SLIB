@@ -86,7 +86,10 @@ export const MetadataConfigList: React.FC = () => {
       {
         accessorKey: 'assetType',
         header: t('asset_type', 'Loại File'),
-        cell: ({ row }) => AssetType[row.original.assetType]
+        cell: ({ row }) => {
+          const names: Record<number, string> = { 0: 'PDF', 1: 'Video', 2: 'Audio', 3: 'Image', 4: 'Other' };
+          return names[row.original.assetType as number] || 'Unknown';
+        }
       },
       {
         accessorKey: 'fieldName',
@@ -169,7 +172,7 @@ export const MetadataConfigList: React.FC = () => {
                 <select 
                   className="w-full px-3 py-2 border rounded-md dark:bg-slate-900"
                   value={formData.assetType}
-                  onChange={e => setFormData({...formData, assetType: parseInt(e.target.value)})}
+                  onChange={e => setFormData({...formData, assetType: parseInt(e.target.value) as AssetType})}
                 >
                   <option value={AssetType.PDF}>PDF</option>
                   <option value={AssetType.Video}>Video</option>

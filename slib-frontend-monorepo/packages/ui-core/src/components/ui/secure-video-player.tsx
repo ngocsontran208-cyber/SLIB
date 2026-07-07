@@ -38,7 +38,7 @@ export const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({ assetId, t
     videoElement.setAttribute('controlsList', 'nodownload');
     
     // Chặn chuột phải (Context Menu)
-    const handleContextMenu = (e: MouseEvent) => {
+    const handleContextMenu = (e: Event) => {
       e.preventDefault();
     };
     
