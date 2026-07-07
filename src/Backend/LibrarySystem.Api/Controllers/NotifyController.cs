@@ -31,5 +31,19 @@ namespace LibrarySystem.Api.Controllers
             await _hubContext.Clients.All.SendAsync("ReceiveMessage", "System", request.Message);
             return Ok();
         }
+
+        public class AssetStatusRequest
+        {
+            public int AssetId { get; set; }
+            public string Status { get; set; } = string.Empty;
+            public string Message { get; set; } = string.Empty;
+        }
+
+        [HttpPost("asset-status")]
+        public async Task<IActionResult> UpdateAssetStatus([FromBody] AssetStatusRequest request)
+        {
+            await _hubContext.Clients.All.SendAsync("ReceiveAssetStatus", request.AssetId, request.Status, request.Message);
+            return Ok();
+        }
     }
 }

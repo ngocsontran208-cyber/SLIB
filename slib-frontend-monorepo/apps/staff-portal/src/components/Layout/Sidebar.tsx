@@ -15,7 +15,8 @@ import {
   History,
   RotateCw,
   CreditCard,
-  Printer
+  Printer,
+  Database
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -63,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
           </li>
         </ul>
 
-        {(isAdmin || isLibrarian) && (
+        {isLibrarian && (
           <>
             {!isCollapsed ? (
               <div className="px-6 mb-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap overflow-hidden">
@@ -219,6 +220,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                 <NavLink to="/admin/templates" className={getNavLinkClass} title="Mẫu Thông báo & Nhãn">
                   <Printer size={18} className="flex-shrink-0" />
                   {!isCollapsed && <span className="whitespace-nowrap">Mẫu Thông báo & Nhãn</span>}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/dam" className={getNavLinkClass} title={t('dam_config_title', 'Cấu hình DAM & DRM')}>
+                  <Database size={18} className="flex-shrink-0" />
+                  {!isCollapsed && <span className="whitespace-nowrap">{t('dam_config_title', 'Cấu hình DAM & DRM')}</span>}
                 </NavLink>
               </li>
             </ul>

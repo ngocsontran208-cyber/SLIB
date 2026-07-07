@@ -33,6 +33,7 @@ builder.Services.AddTransient<FineCalculationJob>();
 builder.Services.AddTransient<ISearchIndexerJob, SearchIndexingJob>();
 builder.Services.AddTransient<OverdueClaimingJob>();
 builder.Services.AddTransient<SushiHarvestJob>();
+builder.Services.AddTransient<AssetProcessingJob>();
 
 // Đăng ký Elasticsearch Service
 builder.Services.AddSingleton<IElasticsearchService, ElasticsearchService>();

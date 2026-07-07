@@ -1,28 +1,170 @@
-using LibrarySystem.Domain.Entities;
+using LibrarySystem.Domain.Entities.Dam;
 using LibrarySystem.Infrastructure.Data;
 using LibrarySystem.Infrastructure.DrmEngine;
+using LibrarySystem.Infrastructure.Search;
+using LibrarySystem.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace LibrarySystem.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    // [Authorize] - Yêu cầu đăng nhập để truy cập tài nguyên số
+    [Route("api/digital-asset")]
     public class DigitalAssetController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly IDrmEngineService _drmEngine;
+        private readonly IStorageService _storageService;
+        private readonly IElasticsearchService _elasticsearchService;
+        private readonly IMemoryCache _cache;
 
-        public DigitalAssetController(ApplicationDbContext context, IDrmEngineService drmEngine)
+        public DigitalAssetController(
+            ApplicationDbContext context, 
+            IDrmEngineService drmEngine, 
+            IStorageService storageService, 
+            IElasticsearchService elasticsearchService,
+            IMemoryCache cache)
         {
             _context = context;
             _drmEngine = drmEngine;
+            _storageService = storageService;
+            _elasticsearchService = elasticsearchService;
+            _cache = cache;
         }
+
+        #region Metadata Config (Admin)
+
+        [HttpGet("metadata-configs")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetMetadataConfigs()
+        {
+            if (!_cache.TryGetValue("MetadataConfigs", out var configs))
+            {
+                configs = await _context.AssetMetadataConfigs.ToListAsync();
+                _cache.Set("MetadataConfigs", configs, TimeSpan.FromHours(1));
+            }
+            return Ok(configs);
+        }
+
+        [HttpPost("metadata-configs")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateMetadataConfig([FromBody] AssetMetadataConfig config)
+        {
+            _context.AssetMetadataConfigs.Add(config);
+            await _context.SaveChangesAsync();
+            _cache.Remove("MetadataConfigs");
+            return CreatedAtAction(nameof(GetMetadataConfigs), new { id = config.Id }, config);
+        }
+
+        [HttpPut("metadata-configs/{id}")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateMetadataConfig(int id, [FromBody] AssetMetadataConfig config)
+        {
+            if (id != config.Id) return BadRequest();
+            _context.Entry(config).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            _cache.Remove("MetadataConfigs");
+            return NoContent();
+        }
+
+        [HttpDelete("metadata-configs/{id}")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteMetadataConfig(int id)
+        {
+            var config = await _context.AssetMetadataConfigs.FindAsync(id);
+            if (config == null) return NotFound();
+            _context.AssetMetadataConfigs.Remove(config);
+            await _context.SaveChangesAsync();
+            _cache.Remove("MetadataConfigs");
+            return NoContent();
+        }
+
+        #endregion
+
+        #region DRM Policy (Admin)
+
+        [HttpGet("drm-policies")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetDrmPolicies()
+        {
+            if (!_cache.TryGetValue("DrmPolicies", out var policies))
+            {
+                policies = await _context.DrmPolicies.ToListAsync();
+                _cache.Set("DrmPolicies", policies, TimeSpan.FromHours(1));
+            }
+            return Ok(policies);
+        }
+
+        [HttpPost("drm-policies")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateDrmPolicy([FromBody] DrmPolicy policy)
+        {
+            _context.DrmPolicies.Add(policy);
+            await _context.SaveChangesAsync();
+            _cache.Remove("DrmPolicies");
+            return CreatedAtAction(nameof(GetDrmPolicies), new { id = policy.Id }, policy);
+        }
+
+        [HttpPut("drm-policies/{id}")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateDrmPolicy(int id, [FromBody] DrmPolicy policy)
+        {
+            if (id != policy.Id) return BadRequest();
+            _context.Entry(policy).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            _cache.Remove("DrmPolicies");
+            return NoContent();
+        }
+
+        [HttpDelete("drm-policies/{id}")]
+        // [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteDrmPolicy(int id)
+        {
+            var policy = await _context.DrmPolicies.FindAsync(id);
+            if (policy == null) return NotFound();
+            _context.DrmPolicies.Remove(policy);
+            await _context.SaveChangesAsync();
+            _cache.Remove("DrmPolicies");
+            return NoContent();
+        }
+
+        #endregion
+
+        #region Asset Management (Admin)
+
+        [HttpGet]
+        public async Task<IActionResult> GetDigitalAssets()
+        {
+            var assets = await _context.DigitalAssets
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Title,
+                    a.MimeType,
+                    a.FileSize,
+                    a.CreatedAt
+                })
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+            return Ok(assets);
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchAssets([FromQuery] string q)
+        {
+            if (string.IsNullOrWhiteSpace(q)) return BadRequest("Vui lòng nhập từ khóa");
+            
+            var results = await _elasticsearchService.SearchDigitalAssetAsync(q);
+            return Ok(results);
+        }
+
+        #endregion
 
         // Bỏ qua xác thực cho mục đích demo (sẽ thay bằng User.Identity.Name)
         [HttpGet("render-page/{assetId}")]
@@ -43,6 +185,19 @@ namespace LibrarySystem.Api.Controllers
             // Lấy email người dùng từ bảng User (hoặc JWT)
             var user = await _context.Users.FindAsync(userId);
             string userEmail = user?.Email ?? "guest@university.edu";
+
+            // Ghi Log truy cập
+            var log = new AssetAccessLog
+            {
+                DigitalAssetId = assetId,
+                UserEmail = userEmail,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                Device = HttpContext.Request.Headers["User-Agent"].ToString(),
+                AccessType = "Render",
+                AccessedAt = DateTime.UtcNow
+            };
+            _context.AssetAccessLogs.Add(log);
+            await _context.SaveChangesAsync();
 
             // 3. Render file PDF sang ảnh và đóng dấu Watermark
             // Trong thực tế, hệ thống sẽ đọc byte[] từ asset.FileData.
@@ -68,5 +223,62 @@ namespace LibrarySystem.Api.Controllers
             using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
             return data.ToArray();
         }
+
+        #region DRM Streaming
+
+        [HttpGet("stream/{id}")]
+        // [Authorize] // Bật xác thực trong thực tế
+        public async Task<IActionResult> StreamAsset(int id, [FromQuery] string email = "guest@university.edu")
+        {
+            // 1. Lấy thông tin Asset và Policy
+            var asset = await _context.DigitalAssets
+                .Include(a => a.DrmPolicy)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (asset == null) return NotFound("Asset not found");
+            
+            // 2. Kiểm tra quyền truy cập (Giả lập)
+            // if (!User.Identity.IsAuthenticated) return Unauthorized();
+            
+            // 3. Lấy file vật lý từ Storage Service
+            var fileStream = await _storageService.GetFileStreamAsync(asset.FilePath);
+            if (fileStream == null) return NotFound("Physical file not found");
+
+            var policy = asset.DrmPolicy ?? new DrmPolicy();
+
+            // Ghi Log truy cập
+            var log = new AssetAccessLog
+            {
+                DigitalAssetId = id,
+                UserEmail = email,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown",
+                Device = HttpContext.Request.Headers["User-Agent"].ToString(),
+                AccessType = "Stream",
+                AccessedAt = DateTime.UtcNow
+            };
+            _context.AssetAccessLogs.Add(log);
+            await _context.SaveChangesAsync();
+
+            // 4. Phân nhánh xử lý theo định dạng File
+            if (asset.MimeType.Contains("pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                // PDF: Bắn qua DrmEngineService để đóng dấu Watermark và cắt trang
+                var processedStream = await _drmEngine.ProcessPdfStreamAsync(fileStream, policy, email);
+                return File(processedStream, asset.MimeType);
+            }
+            else if (asset.MimeType.Contains("video") || asset.MimeType.Contains("audio"))
+            {
+                // Video/Audio: Không cần đóng dấu chữ (thường đóng dấu mềm trên Frontend hoặc FFmpeg)
+                // Hỗ trợ HTTP 206 Partial Content (Byte-Range) cực kỳ mượt mà
+                return File(fileStream, asset.MimeType, enableRangeProcessing: true);
+            }
+
+            // Các file khác (Zip, Docx...): Tải thẳng (có thể check Policy AllowDownload)
+            if (!policy.AllowDownload) return Forbid("Tài liệu này không cho phép tải về.");
+            
+            return File(fileStream, asset.MimeType);
+        }
+
+        #endregion
     }
 }

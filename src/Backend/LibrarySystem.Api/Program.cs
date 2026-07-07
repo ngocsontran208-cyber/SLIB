@@ -60,6 +60,7 @@ builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IPhysicalItemSer
 builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IErmService, LibrarySystem.Infrastructure.Services.Erm.ErmService>();
 builder.Services.AddScoped<LibrarySystem.Application.Services.ITemplateParserService, LibrarySystem.Application.Services.TemplateParserService>();
 builder.Services.AddScoped<LibrarySystem.Application.Interfaces.ISushiHarvestService, LibrarySystem.Infrastructure.Services.Erm.SushiHarvestService>();
+builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IStorageService, LibrarySystem.Infrastructure.Services.FilestreamStorageService>();
 builder.Services.AddHttpClient();
 
 // Đăng ký RabbitMqProducer

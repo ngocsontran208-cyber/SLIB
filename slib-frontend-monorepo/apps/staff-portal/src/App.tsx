@@ -13,6 +13,8 @@ import { MarcTemplateConfig } from './pages/marc/MarcTemplateConfig';
 import { MarcTemplateForm } from './pages/marc/MarcTemplateForm';
 import { SystemPolicyConfig } from './pages/settings/SystemPolicyConfig';
 import { TemplateBuilder } from './pages/settings/TemplateBuilder';
+import { DamConfigDashboard } from './pages/dam/DamConfigDashboard';
+import { DigitalAssetRegistration } from './pages/dam/DigitalAssetRegistration';
 import { VendorManagement } from './pages/acquisition/VendorManagement';
 import { FundManagement } from './pages/acquisition/FundManagement';
 import { PurchaseOrderManagement } from './pages/acquisition/PurchaseOrderManagement';
@@ -135,6 +137,12 @@ function App() {
               <Route path="admin/users" element={<ProtectedRoute requiredRole="Admin"><UserManagement /></ProtectedRoute>} />
               <Route path="admin/policies" element={<ProtectedRoute requiredRole="Admin"><SystemPolicyConfig /></ProtectedRoute>} />
               <Route path="admin/templates" element={<ProtectedRoute requiredRole="Admin"><TemplateBuilder /></ProtectedRoute>} />
+              
+              {/* DAM Routes */}
+              <Route path="admin/dam" element={<ProtectedRoute requiredRole="Admin"><DamConfigDashboard /></ProtectedRoute>} />
+              <Route path="admin/dam/register" element={<ProtectedRoute requiredRole="Librarian"><DigitalAssetRegistration /></ProtectedRoute>} />
+              
+              {/* Acquisitions Routes */}
             </Route>
 
             {/* Catch-all */}

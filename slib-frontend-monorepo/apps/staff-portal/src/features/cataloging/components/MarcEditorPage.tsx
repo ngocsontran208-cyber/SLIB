@@ -49,12 +49,13 @@ export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bi
   const watchTemplateId = watch('templateId');
 
   // Cảnh báo khi rời trang nếu có thay đổi chưa lưu
-  useBlocker(({ currentLocation, nextLocation }) => {
-    if (isDirty && currentLocation.pathname !== nextLocation.pathname) {
-      return !window.confirm('Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang này?');
-    }
-    return false;
-  });
+  // [DISABLED] useBlocker yêu cầu Data Router (createBrowserRouter) thay vì BrowserRouter.
+  // useBlocker(({ currentLocation, nextLocation }) => {
+  //   if (isDirty && currentLocation.pathname !== nextLocation.pathname) {
+  //     return !window.confirm('Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang này?');
+  //   }
+  //   return false;
+  // });
 
   // Hotkeys: Ctrl + Enter để lưu nhanh
   useEffect(() => {

@@ -13,3 +13,4 @@ export * from './course.service';
 export * from './inventory.service';
 export * from './ill.service';
 export * from './template.service';
+export * from './dam.service';

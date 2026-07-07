@@ -150,6 +150,25 @@
     "add_item": "Add Item",
     "record_title": "Title",
     "record_author": "Author",
-    "save_record": "Save Record"
+    "save_record": "Save Record",
+
+    "dam_module": "Digital Assets",
+    "dam_config_title": "DAM & DRM Configuration",
+    "dam_config_desc": "Manage dynamic metadata fields and digital rights management policies.",
+    "metadata_configs": "Metadata Configs",
+    "drm_policies": "DRM Policies",
+    "add_metadata_field": "Add Data Field",
+    "field_name": "Field Name",
+    "data_type": "Data Type",
+    "is_searchable": "Searchable",
+    "add_drm_policy": "Add DRM Policy",
+    "policy_name": "Policy Name",
+    "allow_download": "Allow Download",
+    "max_preview_pages": "Preview Pages (0 = Full)",
+    "watermark_text": "Watermark Text",
+    "asset_type": "Asset Type",
+    "text_type": "Text",
+    "date_type": "Date",
+    "number_type": "Number"
   }
 }

@@ -58,3 +58,6 @@ export * from './template';
 export * from './acquisition.types';
 export * from './erm.types';
 export * from './system.types';
+export * from './dam';
+export type { AssetMetadataConfig, DrmPolicy } from './dam';
+export { AssetType } from './dam';

@@ -14,5 +14,10 @@ namespace LibrarySystem.Api.Hubs
         {
             await Clients.All.SendAsync("ReceiveInventoryScan", scanResult);
         }
+
+        public async Task SendAssetStatus(int assetId, string status, string message)
+        {
+            await Clients.All.SendAsync("ReceiveAssetStatus", assetId, status, message);
+        }
     }
 }

@@ -158,7 +158,25 @@
     "patron_desc": "Tra cứu thông tin, theo dõi nợ đọng của độc giả.",
     "loan_history": "Tra cứu Mượn Trả",
     "renew_management": "Quản Lý Gia Hạn",
-    "fine_management": "Quản Lý Tiền Phạt",
-    "circulation_params": "Tham Số Lưu Thông"
+    "circulation_params": "Tham Số Lưu Thông",
+
+    "dam_module": "Tài Nguyên Số",
+    "dam_config_title": "Cấu hình DAM & DRM",
+    "dam_config_desc": "Quản lý trường thông tin động và chính sách bản quyền cho tài liệu số.",
+    "metadata_configs": "Cấu hình Metadata",
+    "drm_policies": "Chính sách Bản quyền (DRM)",
+    "add_metadata_field": "Thêm Trường Dữ Liệu",
+    "field_name": "Tên Trường",
+    "data_type": "Loại Dữ Liệu",
+    "is_searchable": "Cho phép tìm kiếm",
+    "add_drm_policy": "Thêm DRM Policy",
+    "policy_name": "Tên Chính Sách",
+    "allow_download": "Cho phép tải về",
+    "max_preview_pages": "Số trang đọc thử (0 = Full)",
+    "watermark_text": "Nội dung Watermark",
+    "asset_type": "Loại File",
+    "text_type": "Văn bản",
+    "date_type": "Ngày tháng",
+    "number_type": "Số"
   }
 }

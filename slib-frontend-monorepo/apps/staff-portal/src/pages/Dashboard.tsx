@@ -10,7 +10,8 @@ import {
   Truck, 
   Wallet, 
   UserCheck, 
-  Repeat
+  Repeat,
+  FileBox
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -79,12 +80,24 @@ export const Dashboard: React.FC = () => {
       border: 'border-slate-200 dark:border-slate-500/20',
       path: '/admin/users',
       roles: ['Admin']
+    },
+    {
+      id: 'dam',
+      title: 'Tài nguyên số (DAM)',
+      description: 'Quản lý kho file PDF, Video, cấu hình DRM.',
+      icon: <FileBox size={40} className="text-indigo-500" />,
+      bg: 'bg-indigo-50 dark:bg-indigo-500/10',
+      border: 'border-indigo-200 dark:border-indigo-500/20',
+      path: isLibrarian ? '/admin/dam/register' : '/admin/dam',
+      roles: ['Admin', 'Librarian']
     }
   ];
 
-  const visibleModules = modules.filter(m => 
-    m.roles.includes('Admin') && isAdmin || m.roles.includes('Librarian') && (isAdmin || isLibrarian)
-  );
+  const visibleModules = modules.filter(m => {
+    if (m.id === 'admin') return isAdmin;
+    if (m.id === 'dam') return isAdmin || isLibrarian;
+    return isLibrarian;
+  });
 
   return (
     <div className="space-y-10 py-6">

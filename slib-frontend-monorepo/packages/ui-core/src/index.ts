@@ -8,5 +8,8 @@ export * from './components/ui/toast';
 export * from './components/ui/toaster';
 export * from './components/ui/label';
 export * from './components/ui/form';
+export * from './components/ui/drag-drop-upload';
+export * from './components/ui/secure-pdf-viewer';
+export * from './components/ui/secure-video-player';
 export * from './hooks/use-toast';
 export { cn } from './lib/utils';

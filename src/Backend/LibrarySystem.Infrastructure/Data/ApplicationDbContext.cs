@@ -1,4 +1,5 @@
 using LibrarySystem.Domain.Entities;
+using LibrarySystem.Domain.Entities.Dam;
 using Microsoft.EntityFrameworkCore;
 
 namespace LibrarySystem.Infrastructure.Data
@@ -64,6 +65,13 @@ namespace LibrarySystem.Infrastructure.Data
 
         // Notification Templates (Email/ZPL)
         public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+
+        // Digital Asset Management (DAM)
+        public DbSet<AssetMetadataConfig> AssetMetadataConfigs { get; set; }
+        public DbSet<DigitalAsset> DigitalAssets { get; set; }
+        public DbSet<DigitalAssetValue> DigitalAssetValues { get; set; }
+        public DbSet<DrmPolicy> DrmPolicies { get; set; }
+        public DbSet<AssetAccessLog> AssetAccessLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -196,7 +204,7 @@ namespace LibrarySystem.Infrastructure.Data
                 .HasOne(i => i.SerialSubscription)
                 .WithMany(s => s.Issues)
                 .HasForeignKey(i => i.SerialSubscriptionId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<SerialIssue>()
                 .HasOne(i => i.PhysicalItem)
@@ -268,6 +276,30 @@ namespace LibrarySystem.Infrastructure.Data
                 .HasForeignKey(r => r.PartnerId)
                 .OnDelete(DeleteBehavior.Cascade);
             
+            // Cấu hình DAM
+            modelBuilder.Entity<DigitalAsset>()
+                .HasOne(da => da.DrmPolicy)
+                .WithMany(p => p.Assets)
+                .HasForeignKey(da => da.DrmPolicyId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<DigitalAssetValue>()
+                .HasOne(dav => dav.Asset)
+                .WithMany(da => da.MetadataValues)
+                .HasForeignKey(dav => dav.AssetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DigitalAssetValue>()
+                .HasOne(dav => dav.Config)
+                .WithMany(c => c.Values)
+                .HasForeignKey(dav => dav.ConfigId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AssetAccessLog>()
+                .HasOne(log => log.Asset)
+                .WithMany()
+                .HasForeignKey(log => log.DigitalAssetId)
+                .OnDelete(DeleteBehavior.Cascade);
             
             // Cấu hình Fluent API cho BookLoan
             modelBuilder.Entity<BookLoan>()

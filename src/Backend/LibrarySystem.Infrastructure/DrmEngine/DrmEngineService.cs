@@ -1,12 +1,24 @@
 using SkiaSharp;
 using System;
 using System.IO;
+using System.Threading.Tasks;
+using LibrarySystem.Domain.Entities.Dam;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
+using iText.Kernel.Font;
+using iText.IO.Font.Constants;
+using iText.Kernel.Colors;
+using iText.Kernel.Pdf.Extgstate;
 
 namespace LibrarySystem.Infrastructure.DrmEngine
 {
     public interface IDrmEngineService
     {
         byte[] ApplyDynamicWatermark(byte[] pdfPageImage, string userEmail, string watermarkTemplate);
+        Task<Stream> ProcessPdfStreamAsync(Stream sourceStream, DrmPolicy policy, string userInfo);
     }
 
     public class DrmEngineService : IDrmEngineService
@@ -53,6 +65,80 @@ namespace LibrarySystem.Infrastructure.DrmEngine
             using var data = image.Encode(SKEncodedImageFormat.Png, 100);
             
             return data.ToArray();
+        }
+
+        public async Task<Stream> ProcessPdfStreamAsync(Stream sourceStream, DrmPolicy policy, string userInfo)
+        {
+            var outStream = new MemoryStream();
+            
+            if (sourceStream.CanSeek)
+                sourceStream.Position = 0;
+
+            // Sử dụng iText7 để thao tác PDF
+            using (var pdfReader = new PdfReader(sourceStream))
+            using (var pdfWriter = new PdfWriter(outStream))
+            {
+                // Ngăn PdfWriter đóng outStream khi kết thúc block using
+                pdfWriter.SetCloseStream(false);
+                
+                using (var pdfDoc = new PdfDocument(pdfReader, pdfWriter))
+                {
+                    int totalPages = pdfDoc.GetNumberOfPages();
+                    int pagesToKeep = policy.MaxPreviewPages > 0 && policy.MaxPreviewPages < totalPages 
+                                      ? policy.MaxPreviewPages 
+                                      : totalPages;
+
+                    // 1. Cắt bớt trang nếu yêu cầu (Truncation)
+                    if (pagesToKeep < totalPages)
+                    {
+                        for (int i = totalPages; i > pagesToKeep; i--)
+                        {
+                            pdfDoc.RemovePage(i);
+                        }
+                    }
+
+                    // 2. Chèn Watermark (Đóng dấu bản quyền)
+                    if (!string.IsNullOrEmpty(policy.WatermarkText))
+                    {
+                        string finalWatermark = policy.WatermarkText
+                            .Replace("%Email%", userInfo)
+                            .Replace("%Username%", userInfo)
+                            .Replace("%Date%", DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"));
+
+                        var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+                        var gs = new PdfExtGState().SetFillOpacity(0.3f); // 30% opacity để in chìm
+
+                        for (int i = 1; i <= pagesToKeep; i++)
+                        {
+                            var page = pdfDoc.GetPage(i);
+                            var pageSize = page.GetPageSizeWithRotation();
+                            var pdfCanvas = new PdfCanvas(page);
+                            
+                            pdfCanvas.SaveState();
+                            pdfCanvas.SetExtGState(gs);
+
+                            using (var canvas = new Canvas(pdfCanvas, pageSize))
+                            {
+                                var paragraph = new Paragraph(finalWatermark)
+                                    .SetFont(font)
+                                    .SetFontSize(48)
+                                    .SetFontColor(ColorConstants.RED);
+
+                                float x = (pageSize.GetLeft() + pageSize.GetRight()) / 2;
+                                float y = (pageSize.GetTop() + pageSize.GetBottom()) / 2;
+                                
+                                // Căn giữa và xoay 45 độ (Pi/4)
+                                canvas.ShowTextAligned(paragraph, x, y, i, TextAlignment.CENTER, VerticalAlignment.MIDDLE, (float)(Math.PI / 4));
+                            }
+                            
+                            pdfCanvas.RestoreState();
+                        }
+                    }
+                }
+            }
+
+            outStream.Position = 0;
+            return await Task.FromResult(outStream);
         }
     }
 }

@@ -67,6 +67,18 @@ Hệ thống tiếp tục được mở rộng với hàng loạt quy trình ngh
 - **Kiểm kê & Tồn kho (Inventory/Stocktake)**: Số hóa quy trình kiểm kê thư viện. Thủ thư có thể dùng máy quét Barcode hoặc thiết bị đọc RFID cầm tay để quét hàng loạt kệ sách. Hệ thống cập nhật trạng thái "Missing" hoặc "Found" tức thì qua kết nối SignalR thời gian thực.
 - **Trình dựng Mẫu Thông báo & Nhãn (Template Builder)**: Module thiết kế WYSIWYG Editor tích hợp biến động (Dynamic Variables). Hỗ trợ render ra HTML (dành cho Email nhắc hạn trả) hoặc render trực tiếp ra ngôn ngữ ZPL (để đẩy lệnh tới máy in tem/nhãn gáy sách chuyên dụng qua TCP/IP). Hệ thống tích hợp sẵn Grid Preview trực quan mô phỏng khổ giấy Decal Tomy để thủ thư căn chỉnh lề chính xác 100% trước khi in.
 
+## GIAI ĐOẠN 8: HỆ THỐNG QUẢN TRỊ TÀI NGUYÊN SỐ (DAM) VÀ BẢO VỆ BẢN QUYỀN (DRM)
+Nâng cấp khả năng quản lý tài nguyên nội sinh và học liệu số với các tiêu chuẩn bảo mật khắt khe:
+- **Lưu trữ Phân tán & Tải lên Chia nhỏ (Chunked Uploading)**: Thay vì upload nguyên file lớn dễ gây lỗi nghẽn mạng (Timeout), Frontend (React) sẽ chia file thành các mảnh nhỏ (Chunk 5MB) và upload đồng thời (Concurrency). Backend (API) tiếp nhận, lưu tạm vào thư mục `Temp` và chỉ thực hiện gộp (Merge) khi nhận đủ các mảnh. Điều này cho phép hệ thống xử lý mượt mà các file PDF/Video lên tới hàng Gigabyte.
+- **Bảo mật Kỹ thuật Số (DRM Engine - Digital Rights Management)**:
+  - **Dynamic Watermark (Thủy ấn động)**: Backend tự động khắc chìm mã sinh viên, thời gian truy cập, và IP lên mọi trang tài liệu PDF trước khi trả về luồng stream. Kẻ gian không thể dùng công cụ chỉnh sửa để xóa vì thủy ấn đã được "hòa tan" vào cấu trúc PDF (Flattened).
+  - **Giới hạn Đọc thử (Max Preview Pages)**: Cấu hình linh hoạt cho phép sinh viên chỉ xem được N trang đầu tiên hoặc N% tổng số trang của tài liệu. Để xem toàn văn, sinh viên phải thực hiện Mượn tài liệu số.
+  - **Chống Sao chép (Anti-Copy/Download)**: Component Trình xem nội bộ (Secure Viewer) chặn đứng các nỗ lực chuột phải, bôi đen (user-select: none), và sử dụng `URL.createObjectURL()` từ luồng Blob Streaming để giấu kín đường dẫn file thực tế, ngăn chặn triệt để việc dùng IDM (Internet Download Manager) bắt link tải lậu.
+- **Xử lý Ngầm (Background Processing)**: Sau khi gộp file hoàn tất, Message Queue (RabbitMQ) sẽ điều phối các Background Worker (chạy tách biệt khỏi API chính) để thực hiện:
+  - **OCR & Trích xuất Văn bản**: Bóc tách Text từ PDF để đồng bộ vào Elasticsearch, phục vụ tính năng Tìm kiếm Toàn văn (Full-text Search).
+  - **Tạo Ảnh bìa (Thumbnail Generation)**: Tự động trích xuất trang đầu tiên của PDF hoặc khung hình bất kỳ của Video để làm ảnh đại diện cho tài liệu.
+  - **Cập nhật Thời gian thực (Real-time Notification)**: Trạng thái tiến trình của Worker (Đang OCR, Đang tạo ảnh bìa...) được bắn trực tiếp về Frontend thông qua SignalR, giúp người quản trị nắm bắt tiến độ mà không cần làm mới trang.
+
 ## HƯỚNG DẪN KHỞI CHẠY (GETTING STARTED)
 
 1. Yêu cầu hệ thống:

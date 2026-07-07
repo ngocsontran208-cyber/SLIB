@@ -13,6 +13,7 @@ export const useSignalR = (hubUrl: string) => {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [inventoryScans, setInventoryScans] = useState<any[]>([]);
+  const [assetStatuses, setAssetStatuses] = useState<Record<number, { status: string, message: string }>>({});
 
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
@@ -45,6 +46,13 @@ export const useSignalR = (hubUrl: string) => {
           connection.on('ReceiveInventoryScan', (scanResult: any) => {
             setInventoryScans(prev => [scanResult, ...prev]);
           });
+
+          connection.on('ReceiveAssetStatus', (assetId: number, status: string, message: string) => {
+            setAssetStatuses(prev => ({
+              ...prev,
+              [assetId]: { status, message }
+            }));
+          });
         })
         .catch(e => console.log('SignalR Connection failed: ', e));
     }
@@ -53,6 +61,7 @@ export const useSignalR = (hubUrl: string) => {
       if (connection) {
         connection.off('ReceiveMessage');
         connection.off('ReceiveInventoryScan');
+        connection.off('ReceiveAssetStatus');
         connection.stop();
       }
     };
@@ -70,5 +79,5 @@ export const useSignalR = (hubUrl: string) => {
     setInventoryScans([]);
   }, []);
 
-  return { notifications, markAsRead, markAllAsRead, inventoryScans, clearInventoryScans };
+  return { notifications, markAsRead, markAllAsRead, inventoryScans, clearInventoryScans, assetStatuses };
 };
