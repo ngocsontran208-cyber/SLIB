@@ -88,6 +88,7 @@ export const MarcFieldRow: React.FC<Props> = ({ fieldIndex, removeField }) => {
             subfieldIndex={sIdx} 
             removeSubfield={remove}
             insertSubfield={insert}
+            parentTag={tagValue}
           />
         ))}
         

@@ -62,7 +62,7 @@ namespace LibrarySystem.Api.Controllers
             surface.Canvas.Clear(SkiaSharp.SKColors.White);
             using var font = new SkiaSharp.SKFont(SkiaSharp.SKTypeface.Default, 24);
             using var paint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.Black };
-            surface.Canvas.DrawText("DUMMY PDF PAGE", 150, 250, font, paint);
+            surface.Canvas.DrawText("DUMMY PDF PAGE", 150, 250, SkiaSharp.SKTextAlign.Left, font, paint);
             
             using var image = surface.Snapshot();
             using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);

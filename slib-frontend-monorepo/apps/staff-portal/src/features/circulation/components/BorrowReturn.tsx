@@ -17,7 +17,6 @@ export const BorrowReturn: React.FC = () => {
   // Giả lập lấy thông tin bạn đọc
   const fetchPatron = (id: string) => {
     if (!id) return;
-    // Tạm thời mock data chờ API
     setPatronData({
       id: parseInt(id),
       fullName: 'Nguyễn Văn Sinh Viên',
@@ -27,9 +26,27 @@ export const BorrowReturn: React.FC = () => {
       fines: 50000,
       avatar: 'https://ui-avatars.com/api/?name=Sinh+Vien&background=0D8ABC&color=fff'
     });
-    // Auto focus sang ô quét sách
-    barcodeInputRef.current?.focus();
+    setTimeout(() => barcodeInputRef.current?.focus(), 100);
   };
+
+  // Lắng nghe phím gõ từ máy quét khi bị mất focus
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Nếu đang nhập ở input khác thì bỏ qua
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+      
+      // Tập trung lại vào ô quét (Thẻ hoặc Sách tuỳ trạng thái)
+      if (patronData) {
+        barcodeInputRef.current?.focus();
+      } else {
+        const patronInput = document.getElementById('patron-barcode-input');
+        patronInput?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [patronData]);
 
   const handlePatronKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -129,6 +146,7 @@ export const BorrowReturn: React.FC = () => {
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2 text-slate-600 dark:text-slate-400">Mã sinh viên / Quét thẻ</label>
               <input 
+                id="patron-barcode-input"
                 type="text" 
                 value={patronId}
                 onChange={(e) => setPatronId(e.target.value)}

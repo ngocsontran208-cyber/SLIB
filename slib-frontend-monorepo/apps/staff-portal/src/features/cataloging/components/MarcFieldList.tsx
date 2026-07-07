@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useFormContext, useFieldArray } from 'react-hook-form';
 import { Plus } from 'lucide-react';
 import { MarcFieldRow } from './MarcFieldRow';
@@ -39,6 +39,17 @@ export const MarcFieldList: React.FC = () => {
       }
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        append({ tag: '', indicator1: '', indicator2: '', subfields: [{ code: 'a', value: '' }] });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [append]);
 
   return (
     <div className="flex flex-col md:flex-row gap-6 relative">

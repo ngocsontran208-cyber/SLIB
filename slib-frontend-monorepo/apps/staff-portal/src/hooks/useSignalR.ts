@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
 
 export interface AppNotification {
@@ -12,6 +12,7 @@ export interface AppNotification {
 export const useSignalR = (hubUrl: string) => {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [inventoryScans, setInventoryScans] = useState<any[]>([]);
 
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
@@ -40,6 +41,10 @@ export const useSignalR = (hubUrl: string) => {
             };
             setNotifications(prev => [newNotif, ...prev]);
           });
+
+          connection.on('ReceiveInventoryScan', (scanResult: any) => {
+            setInventoryScans(prev => [scanResult, ...prev]);
+          });
         })
         .catch(e => console.log('SignalR Connection failed: ', e));
     }
@@ -47,6 +52,7 @@ export const useSignalR = (hubUrl: string) => {
     return () => {
       if (connection) {
         connection.off('ReceiveMessage');
+        connection.off('ReceiveInventoryScan');
         connection.stop();
       }
     };
@@ -60,5 +66,9 @@ export const useSignalR = (hubUrl: string) => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
-  return { notifications, markAsRead, markAllAsRead };
+  const clearInventoryScans = useCallback(() => {
+    setInventoryScans([]);
+  }, []);
+
+  return { notifications, markAsRead, markAllAsRead, inventoryScans, clearInventoryScans };
 };

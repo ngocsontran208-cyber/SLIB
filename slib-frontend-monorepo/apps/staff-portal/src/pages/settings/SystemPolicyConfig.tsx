@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '@slib/api-client';
 import { Settings, Save, BookOpen, Shield, Barcode } from 'lucide-react';
+import { useToast } from '@slib/ui-core';
 
 interface LibraryPolicy {
   id: number;
@@ -17,6 +18,8 @@ export const SystemPolicyConfig: React.FC = () => {
   const [policies, setPolicies] = useState<Record<string, LibraryPolicy>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const { toast } = useToast();
 
   // Group policies by category for better UI
   const categories = {
@@ -73,10 +76,10 @@ export const SystemPolicyConfig: React.FC = () => {
       
       // Refresh to get updated timestamps
       await fetchPolicies();
-      alert("Lưu chính sách thành công!");
+      toast({ title: "Thành công", description: "Lưu chính sách thành công!" });
     } catch (error) {
       console.error("Failed to save policies", error);
-      alert("Lỗi khi lưu chính sách!");
+      toast({ variant: "destructive", title: "Lỗi", description: "Lỗi khi lưu chính sách!" });
     } finally {
       setSaving(false);
     }

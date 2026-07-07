@@ -39,6 +39,32 @@ namespace LibrarySystem.Infrastructure.Data
         public virtual DbSet<CounterStatistic> CounterStatistics { get; set; } = null!;
         public DbSet<Sip2Device> Sip2Devices { get; set; } = null!;
 
+        // Bổ sung các DbSet cho phân hệ Ấn phẩm định kỳ (Serials Management)
+        public virtual DbSet<SerialSubscription> SerialSubscriptions { get; set; } = null!;
+        public virtual DbSet<PredictionPattern> PredictionPatterns { get; set; } = null!;
+        public virtual DbSet<SerialIssue> SerialIssues { get; set; } = null!;
+
+        // Bổ sung các DbSet cho phân hệ Kiểm soát chuẩn (Authority Control)
+        public virtual DbSet<AuthorityRecord> AuthorityRecords { get; set; } = null!;
+        public virtual DbSet<BibAuthorityLink> BibAuthorityLinks { get; set; } = null!;
+
+        // Bổ sung các DbSet cho phân hệ Tài liệu dự khóa (Course Reserves)
+        public virtual DbSet<LibrarySystem.Domain.Entities.CourseReserves.Instructor> Instructors { get; set; } = null!;
+        public virtual DbSet<LibrarySystem.Domain.Entities.CourseReserves.Course> Courses { get; set; } = null!;
+        public virtual DbSet<LibrarySystem.Domain.Entities.CourseReserves.CourseReserveList> CourseReserveLists { get; set; } = null!;
+        public virtual DbSet<LibrarySystem.Domain.Entities.CourseReserves.CourseReserveItem> CourseReserveItems { get; set; } = null!;
+
+        // Bổ sung các DbSet cho phân hệ Kiểm kê (Inventory)
+        public virtual DbSet<LibrarySystem.Domain.Entities.Inventory.StocktakeSession> StocktakeSessions { get; set; } = null!;
+        public virtual DbSet<LibrarySystem.Domain.Entities.Inventory.StocktakeScan> StocktakeScans { get; set; } = null!;
+
+        // Bổ sung các DbSet cho phân hệ ILL (Mượn liên thư viện)
+        public virtual DbSet<LibrarySystem.Domain.Entities.Ill.IllPartner> IllPartners { get; set; } = null!;
+        public virtual DbSet<LibrarySystem.Domain.Entities.Ill.IllRequest> IllRequests { get; set; } = null!;
+
+        // Notification Templates (Email/ZPL)
+        public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -80,11 +106,24 @@ namespace LibrarySystem.Infrastructure.Data
                         builder.ToJson();
                         builder.OwnsMany(f => f.Subfields);
                     });
+
+                modelBuilder.Entity<AuthorityRecord>()
+                    .OwnsMany(b => b.Fields, builder =>
+                    {
+                        builder.ToJson();
+                        builder.OwnsMany(f => f.Subfields);
+                    });
             }
             else
             {
                 // Cho SQLite/InMemory (Testing)
                 modelBuilder.Entity<BibliographicRecord>()
+                    .OwnsMany(b => b.Fields, builder => 
+                    {
+                        builder.OwnsMany(f => f.Subfields);
+                    });
+
+                modelBuilder.Entity<AuthorityRecord>()
                     .OwnsMany(b => b.Fields, builder => 
                     {
                         builder.OwnsMany(f => f.Subfields);
@@ -132,6 +171,101 @@ namespace LibrarySystem.Infrastructure.Data
                 .HasOne(c => c.License)
                 .WithMany(e => e.CounterStatistics)
                 .HasForeignKey(c => c.LicenseId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Cấu hình Serials Management
+            modelBuilder.Entity<SerialSubscription>()
+                .HasOne(s => s.BibliographicRecord)
+                .WithMany()
+                .HasForeignKey(s => s.BibliographicRecordId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SerialSubscription>()
+                .HasOne(s => s.PurchaseOrderLine)
+                .WithMany()
+                .HasForeignKey(s => s.PurchaseOrderLineId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<PredictionPattern>()
+                .HasOne(p => p.SerialSubscription)
+                .WithMany(s => s.PredictionPatterns)
+                .HasForeignKey(p => p.SerialSubscriptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SerialIssue>()
+                .HasOne(i => i.SerialSubscription)
+                .WithMany(s => s.Issues)
+                .HasForeignKey(i => i.SerialSubscriptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SerialIssue>()
+                .HasOne(i => i.PhysicalItem)
+                .WithMany()
+                .HasForeignKey(i => i.PhysicalItemId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Cấu hình Authority Control
+            modelBuilder.Entity<BibAuthorityLink>()
+                .HasOne(link => link.BibliographicRecord)
+                .WithMany()
+                .HasForeignKey(link => link.BibliographicRecordId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BibAuthorityLink>()
+                .HasOne(link => link.AuthorityRecord)
+                .WithMany(auth => auth.LinkedBibliographics)
+                .HasForeignKey(link => link.AuthorityRecordId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            // Cấu hình Course Reserves
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.CourseReserves.Course>()
+                .HasOne(c => c.Instructor)
+                .WithMany()
+                .HasForeignKey(c => c.InstructorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.CourseReserves.CourseReserveList>()
+                .HasOne(l => l.Course)
+                .WithMany(c => c.ReserveLists)
+                .HasForeignKey(l => l.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.CourseReserves.CourseReserveItem>()
+                .HasOne(i => i.CourseReserveList)
+                .WithMany(l => l.Items)
+                .HasForeignKey(i => i.CourseReserveListId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.CourseReserves.CourseReserveItem>()
+                .HasOne(i => i.PhysicalItem)
+                .WithMany()
+                .HasForeignKey(i => i.PhysicalItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Cấu hình Inventory
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.Inventory.StocktakeScan>()
+                .HasOne(s => s.Session)
+                .WithMany(session => session.Scans)
+                .HasForeignKey(s => s.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.Inventory.StocktakeScan>()
+                .HasOne(s => s.PhysicalItem)
+                .WithMany()
+                .HasForeignKey(s => s.PhysicalItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Cấu hình ILL
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.Ill.IllRequest>()
+                .HasOne(r => r.Patron)
+                .WithMany()
+                .HasForeignKey(r => r.PatronId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LibrarySystem.Domain.Entities.Ill.IllRequest>()
+                .HasOne(r => r.Partner)
+                .WithMany()
+                .HasForeignKey(r => r.PartnerId)
                 .OnDelete(DeleteBehavior.Cascade);
             
             

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { History, Search, Filter, RotateCw, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@slib/ui-core';
 
 export const LoanHistory: React.FC = () => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   
   const [loans, setLoans] = useState([
@@ -20,7 +22,7 @@ export const LoanHistory: React.FC = () => {
       }
       return loan;
     }));
-    alert(`Đã gia hạn thành công giao dịch mượn ${loanId}`);
+    toast({ title: "Thành công", description: `Đã gia hạn thành công giao dịch mượn ${loanId}` });
   };
 
   return (

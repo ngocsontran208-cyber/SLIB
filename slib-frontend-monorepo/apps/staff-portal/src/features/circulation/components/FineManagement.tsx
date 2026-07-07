@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Wallet, Search, Filter, CreditCard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@slib/ui-core';
 
 export const FineManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   
   const [fines, setFines] = useState([
     { id: 201, patronId: 'SV2023002', patronName: 'Trần Thị B', amount: 50000, reason: 'Trễ hạn sách Design Patterns (15 ngày)', date: '15/09/2023', status: 'Unpaid' },
@@ -19,7 +21,7 @@ export const FineManagement: React.FC = () => {
       }
       return fine;
     }));
-    alert(`Đã thu thành công khoản phạt ${fineId}`);
+    toast({ title: "Thành công", description: `Đã thu thành công khoản phạt ${fineId}` });
   };
 
   return (

@@ -76,8 +76,31 @@ namespace LibrarySystem.Infrastructure.Services.Marc
             catch (Exception)
             {
                 // Thực tế nên ghi log lỗi
-                return null;
+                return null; // Giả lập lỗi
             }
+        }
+
+        public async Task<List<MarcField>?> SearchAuthorityAsync(int targetId, string query)
+        {
+            var target = await _context.SruTargets.FindAsync(targetId);
+            if (target == null) throw new Exception("SRU target not found");
+
+            // TODO: Gọi HTTP Client thật tới target.BaseUrl với query
+            // Ở đây trả về mock data cho VIAF hoặc LOC
+            return new List<MarcField>
+            {
+                new MarcField
+                {
+                    Tag = "100",
+                    Indicator1 = '1',
+                    Indicator2 = ' ',
+                    Subfields = new List<MarcSubfield>
+                    {
+                        new MarcSubfield { Code = "a", Value = query },
+                        new MarcSubfield { Code = "d", Value = "1955-" }
+                    }
+                }
+            };
         }
     }
 }

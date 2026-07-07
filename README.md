@@ -56,7 +56,16 @@ Dự án bao gồm một Monorepo Frontend (Vite + React 18 + TypeScript) đóng
 - Quản trị linh hoạt (Admin-driven Configuration):
   - **SRU & ERM**: Cấu hình các máy chủ liên thông thư mục và thông số kết nối API SUSHI để lấy báo cáo COUNTER tự động.
   - **Mẫu Biên Mục (MARC Templates)**: Giao diện trực quan tự động load sẵn toàn bộ 76 trường MARC 21 tiêu chuẩn (từ 001 đến 856). Quản trị viên chỉ việc "check" chọn các trường bắt buộc và cấu hình form hiển thị mặc định cho từng loại tài liệu, giảm thiểu sai sót cho thủ thư khi nhập liệu.
-  - **Tích hợp Kiosk & SIP2**: Khai báo IP, Port của các cổng an ninh và Kiosk tự phục vụ.
+  - **Tích hợp Kiosk & SIP2**: Khai báo IP, Port của các cổng anượng ninh và Kiosk tự phục vụ.
+  - **Phân quyền Bảo mật Kép (Double Security Layer)**: Bên cạnh Backend, lớp Component `ProtectedRoute` phía Frontend sẽ chủ động đánh chặn ngay từ vòng gửi xe (ngăn chặn văng tài khoản Sinh Viên cố tình truy cập vào Dashboard của Staff Portal).
+
+## GIAI ĐOẠN 7: TÍCH HỢP QUY TRÌNH NGHIỆP VỤ NÂNG CAO VÀ MỞ RỘNG (ADVANCED WORKFLOWS)
+Hệ thống tiếp tục được mở rộng với hàng loạt quy trình nghiệp vụ chuyên sâu theo quy chuẩn thư viện quốc tế:
+- **Tài liệu cho Khóa học (Course Reserves)**: Liên kết trực tiếp sách và giáo trình với từng Học phần/Môn học. Hệ thống áp dụng chính sách mượn đặc biệt (rút ngắn thời gian mượn xuống theo giờ hoặc theo ngày) để tối ưu vòng quay tài liệu cho toàn bộ sinh viên trong lớp.
+- **Quản trị Ấn phẩm định kỳ (Serials Management)**: Dựa trên cấu trúc Prediction Pattern của MARC 21 để dự báo chu kỳ xuất bản (Tạp chí theo tháng, tuần). Giao diện quản lý hiển thị các Issue (Kỳ báo) trực quan kèm trạng thái (Expected, Received, Claimed).
+- **Mượn Liên Thư viện (Interlibrary Loan - ILL)**: Tuân thủ tiêu chuẩn giao dịch ISO 18626, cung cấp Bảng Kanban Board cho thủ thư kéo thả theo dõi quá trình mượn sách từ các trường Đại học đối tác (Pending, In Transit, Received, Returned).
+- **Kiểm kê & Tồn kho (Inventory/Stocktake)**: Số hóa quy trình kiểm kê thư viện. Thủ thư có thể dùng máy quét Barcode hoặc thiết bị đọc RFID cầm tay để quét hàng loạt kệ sách. Hệ thống cập nhật trạng thái "Missing" hoặc "Found" tức thì qua kết nối SignalR thời gian thực.
+- **Trình dựng Mẫu Thông báo & Nhãn (Template Builder)**: Module thiết kế WYSIWYG Editor tích hợp biến động (Dynamic Variables). Hỗ trợ render ra HTML (dành cho Email nhắc hạn trả) hoặc render trực tiếp ra ngôn ngữ ZPL (để đẩy lệnh tới máy in tem/nhãn gáy sách chuyên dụng qua TCP/IP). Hệ thống tích hợp sẵn Grid Preview trực quan mô phỏng khổ giấy Decal Tomy để thủ thư căn chỉnh lề chính xác 100% trước khi in.
 
 ## HƯỚNG DẪN KHỞI CHẠY (GETTING STARTED)
 

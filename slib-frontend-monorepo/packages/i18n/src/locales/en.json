@@ -47,6 +47,7 @@
     "select_role": "Select Role",
     "ban_user": "Ban Account",
     "unban_user": "Unban Account",
+    "serials_management": "Serials Management",
 
     "marc_template_title": "MARC21 Templates",
     "marc_template_desc": "Configure fields and subfields for different material types.",

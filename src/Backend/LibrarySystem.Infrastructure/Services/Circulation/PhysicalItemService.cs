@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using LibrarySystem.Application.Interfaces;
 using LibrarySystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using LibrarySystem.Domain.Entities;
 
 namespace LibrarySystem.Infrastructure.Services.Circulation
 {
@@ -85,6 +86,71 @@ namespace LibrarySystem.Infrastructure.Services.Circulation
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<BookLoan?> CheckOutAsync(int physicalItemId, int userId)
+        {
+            var physicalItem = await _context.PhysicalItems.FindAsync(physicalItemId);
+            if (physicalItem == null || physicalItem.Status != "Available") 
+                throw new Exception("Physical item is not available.");
+
+            // Kiểm tra xem User có đang vi phạm không (quá hạn, mượn tối đa)
+            var currentLoans = await _context.BookLoans.CountAsync(l => l.UserId == userId && l.Status == "Borrowed");
+            var maxBorrowPolicy = await _context.LibraryPolicies.FirstOrDefaultAsync(p => p.PolicyKey == "MaxBorrowItems");
+            int maxItems = maxBorrowPolicy != null ? int.Parse(maxBorrowPolicy.PolicyValue) : 5;
+
+            if (currentLoans >= maxItems)
+                throw new Exception("User has reached the maximum number of borrowed items.");
+
+            // Kiểm tra quy định Tài liệu dự khóa (Course Reserves)
+            var reserveItem = await _context.CourseReserveItems
+                .Include(i => i.CourseReserveList)
+                .Where(i => i.PhysicalItemId == physicalItemId && 
+                            i.CourseReserveList.Status == "Active" &&
+                            i.CourseReserveList.ActiveFrom <= DateTime.UtcNow &&
+                            i.CourseReserveList.ActiveTo >= DateTime.UtcNow)
+                .FirstOrDefaultAsync();
+
+            DateTime dueDate;
+            
+            if (reserveItem != null)
+            {
+                // Áp dụng ReservePolicy
+                // Ví dụ: ReservePolicy = "2 Hours" hoặc "24 Hours"
+                if (reserveItem.ReservePolicy.Contains("Hours", StringComparison.OrdinalIgnoreCase))
+                {
+                    int hours = int.Parse(reserveItem.ReservePolicy.Split(' ')[0]);
+                    dueDate = DateTime.UtcNow.AddHours(hours);
+                }
+                else
+                {
+                    // Fallback an toàn nếu Policy cấu hình sai
+                    dueDate = DateTime.UtcNow.AddDays(1);
+                }
+            }
+            else
+            {
+                // Áp dụng Policy mặc định
+                var maxDaysPolicy = await _context.LibraryPolicies.FirstOrDefaultAsync(p => p.PolicyKey == "MaxBorrowDays");
+                int maxDays = maxDaysPolicy != null ? int.Parse(maxDaysPolicy.PolicyValue) : 14;
+                dueDate = DateTime.UtcNow.AddDays(maxDays);
+            }
+
+            var bookLoan = new BookLoan
+            {
+                PhysicalItemId = physicalItem.Id,
+                UserId = userId,
+                BorrowDate = DateTime.UtcNow,
+                DueDate = dueDate,
+                Status = "Borrowed"
+            };
+
+            physicalItem.Status = "Borrowed";
+            _context.BookLoans.Add(bookLoan);
+            _context.PhysicalItems.Update(physicalItem);
+            
+            await _context.SaveChangesAsync();
+            return bookLoan;
         }
     }
 }

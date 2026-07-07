@@ -14,12 +14,14 @@ namespace LibrarySystem.Worker.Services
         private readonly ApplicationDbContext _context;
         private readonly RfidHardwareController _rfidHardwareController;
         private readonly ILogger<Sip2Handler> _logger;
+        private readonly LibrarySystem.Application.Interfaces.IPhysicalItemService _physicalItemService;
 
-        public Sip2Handler(ApplicationDbContext context, RfidHardwareController rfidHardwareController, ILogger<Sip2Handler> logger)
+        public Sip2Handler(ApplicationDbContext context, RfidHardwareController rfidHardwareController, ILogger<Sip2Handler> logger, LibrarySystem.Application.Interfaces.IPhysicalItemService physicalItemService)
         {
             _context = context;
             _rfidHardwareController = rfidHardwareController;
             _logger = logger;
+            _physicalItemService = physicalItemService;
         }
 
         public async Task<string> ProcessMessageAsync(string message)
@@ -88,31 +90,20 @@ namespace LibrarySystem.Worker.Services
 
             var item = await _context.PhysicalItems.FirstOrDefaultAsync(p => p.Barcode == barcode);
 
-            if (user == null || item == null || item.Status != "Available")
+            if (user == null || item == null)
             {
                 return $"120N{DateTime.UtcNow:yyyyMMdd    HHmmss}|AO{patronId}|AB{barcode}|";
             }
 
-            // Execute Checkout
-            var loan = new BookLoan
+            try 
             {
-                UserId = user.Id,
-                PhysicalItemId = item.Id,
-                BorrowDate = DateTime.UtcNow,
-                DueDate = DateTime.UtcNow.AddDays(14), // Mặc định 14 ngày
-                Status = "Borrowed"
-            };
-
-            item.Status = "Borrowed";
-            _context.BookLoans.Add(loan);
-            _context.PhysicalItems.Update(item);
-            await _context.SaveChangesAsync();
-
-            // Interact with RFID Hardware to disable EAS bit
-            _rfidHardwareController.ToggleEasBit(barcode, enableSecurity: false);
-
-            // Message 12 (Checkout Response) -> 1 (Success) 
-            return $"121N{DateTime.UtcNow:yyyyMMdd    HHmmss}|AO{patronId}|AB{barcode}|AH{loan.DueDate:yyyyMMdd}|";
+                var loan = await _physicalItemService.CheckOutAsync(item.Id, user.Id);
+                return $"121Y{DateTime.UtcNow:yyyyMMdd    HHmmss}|AO{patronId}|AB{barcode}|AH{loan.DueDate:yyyyMMdd    HHmmss}|";
+            }
+            catch 
+            {
+                return $"120N{DateTime.UtcNow:yyyyMMdd    HHmmss}|AO{patronId}|AB{barcode}|";
+            }
         }
 
         private string? ExtractField(string message, string fieldCode)

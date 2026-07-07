@@ -14,10 +14,12 @@ namespace LibrarySystem.Api.Controllers
     public class LibrarianController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly LibrarySystem.Application.Interfaces.IPhysicalItemService _physicalItemService;
 
-        public LibrarianController(ApplicationDbContext context)
+        public LibrarianController(ApplicationDbContext context, LibrarySystem.Application.Interfaces.IPhysicalItemService physicalItemService)
         {
             _context = context;
+            _physicalItemService = physicalItemService;
         }
 
         public class BorrowRequest
@@ -29,57 +31,22 @@ namespace LibrarySystem.Api.Controllers
         [HttpPost("borrow")]
         public async Task<IActionResult> BorrowBook([FromBody] BorrowRequest request)
         {
-            // 1. Kiểm tra giới hạn số sách tối đa
-            var maxBooksPolicy = await _context.LibraryPolicies.FirstOrDefaultAsync(p => p.PolicyKey == "MaxBooksAllowed");
-            int maxBooks = maxBooksPolicy != null ? int.Parse(maxBooksPolicy.PolicyValue) : 5;
-
-            var currentLoans = await _context.BookLoans.CountAsync(l => l.UserId == request.UserId && l.Status == "Borrowed");
-            if (currentLoans >= maxBooks)
-            {
-                return BadRequest($"User has reached the maximum allowed limit of {maxBooks} books.");
-            }
-
-            // 2. Tìm cuốn sách vật lý qua Barcode
-            var physicalItem = await _context.PhysicalItems.FirstOrDefaultAsync(p => p.Barcode == request.Barcode);
-            if (physicalItem == null) return NotFound("Book not found.");
-
-            if (physicalItem.Status != "Available")
-            {
-                return BadRequest($"This book is currently {physicalItem.Status}.");
-            }
-
-            // 3. Thực hiện thay đổi trạng thái
-            physicalItem.Status = "Borrowed";
-
-            // 4. Tạo giao dịch mượn
-            var maxDaysPolicy = await _context.LibraryPolicies.FirstOrDefaultAsync(p => p.PolicyKey == "MaxBorrowDays");
-            int maxDays = maxDaysPolicy != null ? int.Parse(maxDaysPolicy.PolicyValue) : 14;
-
-            var loan = new BookLoan
-            {
-                UserId = request.UserId,
-                PhysicalItemId = physicalItem.Id,
-                BorrowDate = DateTime.Now,
-                DueDate = DateTime.Now.AddDays(maxDays),
-                Status = "Borrowed"
-            };
-
-            _context.BookLoans.Add(loan);
-
             try
             {
-                // Optimistic Concurrency sẽ được kích hoạt tại đây.
-                // Nếu 2 request cùng sửa status cuốn sách này ở cùng 1 phần ngàn giây,
-                // request thứ 2 sẽ bị văng lỗi DbUpdateConcurrencyException.
-                await _context.SaveChangesAsync();
+                var physicalItem = await _context.PhysicalItems.FirstOrDefaultAsync(p => p.Barcode == request.Barcode);
+                if (physicalItem == null) return NotFound("Book not found.");
+
+                var loan = await _physicalItemService.CheckOutAsync(physicalItem.Id, request.UserId);
+                return Ok(loan);
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Trả về HTTP 409 Conflict thay vì 500
                 return Conflict("Rất tiếc, cuốn sách này vừa được sinh viên khác mượn!");
             }
-
-            return Ok(loan);
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("return/{loanId}")]

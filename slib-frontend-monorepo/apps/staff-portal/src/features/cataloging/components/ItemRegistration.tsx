@@ -4,6 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '@slib/api-client';
 import { Barcode, ArrowLeft, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 
+import { useToast, Skeleton } from '@slib/ui-core';
+
 interface PhysicalItem {
   id: number;
   barcode: string;
@@ -21,6 +23,7 @@ export const ItemRegistration: React.FC = () => {
   const { t } = useTranslation();
   const { recordId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const [record, setRecord] = useState<RecordDetail | null>(null);
   const [items, setItems] = useState<PhysicalItem[]>([]);
@@ -45,7 +48,7 @@ export const ItemRegistration: React.FC = () => {
       setItems(itemsRes.data);
     } catch (error) {
       console.error(error);
-      alert("Không thể tải dữ liệu Biểu ghi.");
+      toast({ variant: "destructive", title: "Lỗi tải dữ liệu", description: "Không thể tải dữ liệu Biểu ghi." });
       navigate('/admin/cataloging/records');
     } finally {
       setLoading(false);
@@ -66,9 +69,10 @@ export const ItemRegistration: React.FC = () => {
       // Tải lại danh sách
       const itemsRes = await api.get(`/api/items/record/${recordId}`);
       setItems(itemsRes.data);
+      toast({ title: "Thành công", description: "Đã thêm đăng ký cá biệt mới." });
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data || "Lỗi khi thêm Đăng ký cá biệt. Có thể mã vạch đã bị trùng.");
+      toast({ variant: "destructive", title: "Lỗi thêm mới", description: error.response?.data || "Có thể mã vạch đã bị trùng." });
     }
   };
 
@@ -77,13 +81,22 @@ export const ItemRegistration: React.FC = () => {
     try {
       await api.delete(`/api/items/${itemId}`);
       setItems(items.filter(i => i.id !== itemId));
+      toast({ title: "Thành công", description: "Đã xoá tài liệu." });
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data || "Không thể xóa tài liệu này (có thể do đang có người mượn).");
+      toast({ variant: "destructive", title: "Lỗi xoá tài liệu", description: error.response?.data || "Không thể xóa (có thể do đang có người mượn)." });
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

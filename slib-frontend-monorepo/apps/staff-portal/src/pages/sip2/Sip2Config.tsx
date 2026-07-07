@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import api from '@slib/api-client';
 import { MonitorSmartphone, Plus, Trash2, Edit } from 'lucide-react';
 
+import { useToast } from '@slib/ui-core';
+
 interface Sip2Device {
   id: number;
   name: string;
@@ -15,6 +17,7 @@ interface Sip2Device {
 
 export const Sip2Config: React.FC = () => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [devices, setDevices] = useState<Sip2Device[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -50,8 +53,10 @@ export const Sip2Config: React.FC = () => {
       try {
         await api.delete(`/api/admin/sip2/devices/${id}`);
         setDevices(devices.filter(d => d.id !== id));
+        toast({ title: "Thành công", description: "Đã xoá thiết bị SIP2." });
       } catch (error) {
         console.error("Failed to delete", error);
+        toast({ variant: "destructive", title: "Lỗi", description: "Không thể xoá thiết bị." });
       }
     }
   };
@@ -68,9 +73,10 @@ export const Sip2Config: React.FC = () => {
       await fetchData();
       setShowModal(false);
       setFormData({ name: '', ipAddress: '', port: 5001, location: '', isActive: true });
+      toast({ title: "Thành công", description: "Đã lưu thông tin thiết bị." });
     } catch (error) {
       console.error("Failed to add device", error);
-      alert("Error saving device.");
+      toast({ variant: "destructive", title: "Lỗi", description: "Error saving device." });
     } finally {
       setIsSubmitting(false);
     }

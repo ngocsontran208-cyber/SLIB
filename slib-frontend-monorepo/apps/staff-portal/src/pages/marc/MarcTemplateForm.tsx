@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import api from '@slib/api-client';
 import { Save, ArrowLeft, Trash2, Plus, Info } from 'lucide-react';
 import { ALL_MARC_FIELDS } from '../../constants/marcFields';
+import { useToast } from '@slib/ui-core';
 
 interface FieldConfig {
   id?: number;
@@ -26,6 +27,7 @@ export const MarcTemplateForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
+  const { toast } = useToast();
 
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
@@ -96,10 +98,11 @@ export const MarcTemplateForm: React.FC = () => {
         await api.post('/api/admin/marc/templates', payload);
       }
       
+      toast({ title: "Thành công", description: "Lưu mẫu biên mục thành công." });
       navigate('/admin/marc-templates');
     } catch (error) {
       console.error("Failed to save template", error);
-      alert("An error occurred while saving the template.");
+      toast({ variant: "destructive", title: "Lỗi", description: "Đã xảy ra lỗi khi lưu mẫu." });
     } finally {
       setSubmitting(false);
     }
@@ -121,12 +124,12 @@ export const MarcTemplateForm: React.FC = () => {
     const tag = window.prompt("Nhập mã trường (Tag), ví dụ: 856");
     if (tag && tag.length === 3 && !isNaN(Number(tag))) {
       if (fields.some(f => f.tag === tag)) {
-        alert("Trường này đã có trong danh sách!");
+        toast({ variant: "destructive", title: "Lỗi", description: "Trường này đã có trong danh sách!" });
         return;
       }
       setFields([...fields, { tag, isRequired: false, description: 'Custom Field' }]);
     } else if (tag) {
-      alert("Mã trường phải gồm 3 chữ số!");
+      toast({ variant: "destructive", title: "Lỗi", description: "Mã trường phải gồm 3 chữ số!" });
     }
   };
 

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import api from '@slib/api-client';
 import { Plus, Trash2, Edit, BookOpen } from 'lucide-react';
 
+import { useToast } from '@slib/ui-core';
+
 interface Vendor {
   id: number;
   name: string;
@@ -24,6 +26,7 @@ interface License {
 
 export const ErmConfig: React.FC = () => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,8 +74,10 @@ export const ErmConfig: React.FC = () => {
       try {
         await api.delete(`/api/admin/erm/licenses/${id}`);
         setLicenses(licenses.filter(l => l.id !== id));
+        toast({ title: "Thành công", description: "Đã xoá giấy phép." });
       } catch (error) {
         console.error("Failed to delete", error);
+        toast({ variant: "destructive", title: "Lỗi", description: "Không thể xoá giấy phép." });
       }
     }
   };
@@ -101,9 +106,10 @@ export const ErmConfig: React.FC = () => {
       await api.post('/api/admin/erm/licenses', payload);
       await fetchData(); // Refresh list to get relationships
       setShowModal(false);
+      toast({ title: "Thành công", description: "Đã thêm giấy phép mới." });
     } catch (error) {
       console.error("Failed to add license", error);
-      alert("Error saving license. Check console.");
+      toast({ variant: "destructive", title: "Lỗi hệ thống", description: "Error saving license. Check console." });
     } finally {
       setIsSubmitting(false);
     }

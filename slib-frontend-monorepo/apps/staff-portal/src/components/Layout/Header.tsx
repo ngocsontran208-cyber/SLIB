@@ -1,80 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LogOut, User, Library, ShoppingCart, Settings, LayoutDashboard, ArrowRightLeft } from 'lucide-react';
+import { LogOut, User, Menu, Search } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationBell } from './NotificationBell';
 
-export const Header: React.FC = () => {
-  const { user, logout, isAdmin, isLibrarian } = useAuth();
-  const { t } = useTranslation();
+interface HeaderProps {
+  toggleSidebar: () => void;
+}
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-      isActive
-        ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-    }`;
+export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+  const { user, logout } = useAuth();
+  const { t } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Implement global search logic later
+      console.log('Global Search:', searchQuery);
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-30 glass border-b border-white/20 dark:border-slate-800/50 shadow-sm transition-colors">
-      <div className="flex items-center justify-between h-16 px-6">
+    <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/50 shadow-sm transition-colors h-16 flex-shrink-0">
+      <div className="flex items-center justify-between h-full px-4 md:px-6 gap-4">
         
-        {/* Left Side: Logo & Main Navigation */}
-        <div className="flex items-center gap-8">
-          <NavLink to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-tr from-primary-600 to-indigo-500 rounded-xl flex items-center justify-center text-white shadow-md font-bold text-lg">
-              S
-            </div>
-            <span className="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight hidden sm:block">
-              SLIB
-            </span>
-          </NavLink>
+        {/* Left Side: Toggle & Global Search */}
+        <div className="flex items-center gap-4 flex-1">
+          <button 
+            onClick={toggleSidebar}
+            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Đóng/Mở Sidebar"
+          >
+            <Menu size={20} />
+          </button>
 
-          <nav className="hidden md:flex items-center gap-2">
-            <NavLink to="/" className={navLinkClass} end>
-              <LayoutDashboard size={18} />
-              Trang chủ
-            </NavLink>
-            
-            {(isAdmin || isLibrarian) && (
-              <>
-                <NavLink to="/admin/cataloging/records" className={navLinkClass}>
-                  <Library size={18} />
-                  Biên mục
-                </NavLink>
-                <NavLink to="/admin/circulation/borrow-return" className={navLinkClass}>
-                  <ArrowRightLeft size={18} />
-                  Lưu thông
-                </NavLink>
-                <NavLink to="/admin/vendors" className={navLinkClass}>
-                  <ShoppingCart size={18} />
-                  Bổ sung
-                </NavLink>
-              </>
-            )}
-
-            {isAdmin && (
-              <NavLink to="/admin/users" className={navLinkClass}>
-                <Settings size={18} />
-                Quản trị
-              </NavLink>
-            )}
-          </nav>
+          {/* Global Search */}
+          <form onSubmit={handleSearch} className="hidden sm:flex items-center relative w-full max-w-md">
+            <Search size={18} className="absolute left-3 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Tra cứu toàn cục (Mã vạch, Tên sách, Độc giả)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-10 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+            />
+          </form>
         </div>
 
         {/* Right Side: Tools & Profile */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           <NotificationBell />
           <ThemeSwitcher />
           <LanguageSwitcher />
           
-          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700/50"></div>
+          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700/50 hidden sm:block"></div>
 
           {user && (
-            <div className="flex items-center gap-4 group cursor-pointer relative z-40">
+            <div className="flex items-center gap-3 group cursor-pointer relative z-40">
               <div className="text-right hidden sm:block">
                 <div className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">
                   {user.email}

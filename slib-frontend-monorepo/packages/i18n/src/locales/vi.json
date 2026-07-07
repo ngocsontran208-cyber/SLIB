@@ -47,6 +47,7 @@
     "select_role": "Chọn Vai Trò",
     "ban_user": "Khóa Tài Khoản",
     "unban_user": "Mở Khóa",
+    "serials_management": "Quản lý Ấn phẩm định kỳ",
 
     "marc_template_title": "Mẫu Biên Mục MARC21",
     "marc_template_desc": "Cấu hình các trường (fields) và trường con (subfields) cho từng loại tài liệu.",

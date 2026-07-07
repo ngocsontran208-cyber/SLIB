@@ -48,6 +48,7 @@ builder.Services.AddScoped<LibrarySystem.Application.Interfaces.ISushiHarvestSer
 
 // Đăng ký SIP2 & RFID Ecosystem
 builder.Services.AddSingleton<RfidHardwareController>();
+builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IPhysicalItemService, LibrarySystem.Infrastructure.Services.Circulation.PhysicalItemService>();
 builder.Services.AddScoped<Sip2Handler>();
 builder.Services.AddHostedService<Sip2SocketServerService>();
 

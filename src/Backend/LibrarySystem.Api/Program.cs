@@ -15,7 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(x => 
+{
+    x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
 builder.Services.AddSignalR();
 
 // Cấu hình CORS
@@ -50,9 +53,12 @@ builder.Services.AddHttpClient<LibrarySystem.Application.Interfaces.ISruClientSe
 
 // Đăng ký Acquisition Services
 builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IAcquisitionService, LibrarySystem.Infrastructure.Services.Acquisition.AcquisitionService>();
+builder.Services.AddScoped<LibrarySystem.Application.Interfaces.ISerialsService, LibrarySystem.Infrastructure.Services.Acquisition.SerialsService>();
 builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IReceivingService, LibrarySystem.Infrastructure.Services.Acquisition.ReceivingService>();
+builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IAuthorityService, LibrarySystem.Infrastructure.Services.Cataloging.AuthorityService>();
 builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IPhysicalItemService, LibrarySystem.Infrastructure.Services.Circulation.PhysicalItemService>();
 builder.Services.AddScoped<LibrarySystem.Application.Interfaces.IErmService, LibrarySystem.Infrastructure.Services.Erm.ErmService>();
+builder.Services.AddScoped<LibrarySystem.Application.Services.ITemplateParserService, LibrarySystem.Application.Services.TemplateParserService>();
 builder.Services.AddScoped<LibrarySystem.Application.Interfaces.ISushiHarvestService, LibrarySystem.Infrastructure.Services.Erm.SushiHarvestService>();
 builder.Services.AddHttpClient();
 

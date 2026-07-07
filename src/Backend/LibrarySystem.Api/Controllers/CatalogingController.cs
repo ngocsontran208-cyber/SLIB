@@ -22,19 +22,22 @@ namespace LibrarySystem.Api.Controllers
         private readonly IMarcImportService _importService;
         private readonly ISruClientService _sruClientService;
         private readonly IMarcSanitizationService _sanitizationService;
+        private readonly IAuthorityService _authorityService;
 
         public CatalogingController(
             ApplicationDbContext context, 
             IMarcValidationService validationService,
             IMarcImportService importService,
             ISruClientService sruClientService,
-            IMarcSanitizationService sanitizationService)
+            IMarcSanitizationService sanitizationService,
+            IAuthorityService authorityService)
         {
             _context = context;
             _validationService = validationService;
             _importService = importService;
             _sruClientService = sruClientService;
             _sanitizationService = sanitizationService;
+            _authorityService = authorityService;
         }
 
         public class CreateRecordRequest
@@ -103,6 +106,9 @@ namespace LibrarySystem.Api.Controllers
 
             _context.BibliographicRecords.Add(record);
             await _context.SaveChangesAsync();
+
+            // Kích hoạt luồng Authority Control: Tự động liên kết Tác giả / Đề mục
+            await _authorityService.LinkBibliographicRecordAsync(record.Id, record.Fields);
 
             return Ok(record);
         }

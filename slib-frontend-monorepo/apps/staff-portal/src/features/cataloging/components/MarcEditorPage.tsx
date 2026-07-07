@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useBlocker } from 'react-router-dom';
 import api from '@slib/api-client';
 import { BookPlus, Save, ArrowLeft, Search, Network } from 'lucide-react';
 import { MarcFieldList } from './MarcFieldList';
+import { useToast } from '@slib/ui-core';
 
 interface CatalogingFormValues {
   templateId: number;
@@ -21,9 +22,14 @@ interface CatalogingFormValues {
   }[];
 }
 
-export const MarcEditorPage: React.FC = () => {
+interface MarcEditorPageProps {
+  recordType?: 'bibliographic' | 'authority';
+}
+
+export const MarcEditorPage: React.FC<MarcEditorPageProps> = ({ recordType = 'bibliographic' }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const [templates, setTemplates] = useState<any[]>([]);
   const [sruTargets, setSruTargets] = useState<any[]>([]);
@@ -39,8 +45,28 @@ export const MarcEditorPage: React.FC = () => {
     }
   });
 
-  const { register, handleSubmit, watch, reset, setValue } = methods;
+  const { register, handleSubmit, watch, reset, setValue, formState: { isDirty, errors } } = methods;
   const watchTemplateId = watch('templateId');
+
+  // Cảnh báo khi rời trang nếu có thay đổi chưa lưu
+  useBlocker(({ currentLocation, nextLocation }) => {
+    if (isDirty && currentLocation.pathname !== nextLocation.pathname) {
+      return !window.confirm('Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn rời khỏi trang này?');
+    }
+    return false;
+  });
+
+  // Hotkeys: Ctrl + Enter để lưu nhanh
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmit(onSubmit)();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSubmit]);
 
   useEffect(() => {
     fetchTemplates();
@@ -70,7 +96,7 @@ export const MarcEditorPage: React.FC = () => {
 
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const tid = Number(e.target.value);
-    setValue('templateId', tid);
+    setValue('templateId', tid, { shouldValidate: true });
     const tpl = templates.find(t => t.id === tid);
     if (tpl) {
       const initialFields = tpl.fields.map((f: any) => ({
@@ -112,16 +138,16 @@ export const MarcEditorPage: React.FC = () => {
         author: newAuthor,
         fields: newFields
       });
-
+      toast({ title: "Thành công", description: "Đã tải dữ liệu từ Z39.50/SRU." });
     } catch (error) {
       console.error("Z39.50 Fetch Error", error);
-      alert("Không tìm thấy dữ liệu ISBN trên Z39.50/SRU target này.");
+      toast({ variant: "destructive", title: "Lỗi tìm kiếm", description: "Không tìm thấy dữ liệu ISBN trên Z39.50/SRU target này." });
     }
   };
 
   const onSubmit = async (data: CatalogingFormValues) => {
     if (!data.templateId) {
-      alert("Vui lòng chọn Mẫu Biên Mục.");
+      toast({ variant: "destructive", title: "Lỗi xác thực", description: "Vui lòng chọn Mẫu Biên Mục." });
       return;
     }
     
@@ -140,10 +166,11 @@ export const MarcEditorPage: React.FC = () => {
 
     try {
       await api.post('/api/cataloging/records', payload);
+      toast({ title: "Thành công", description: "Đã lưu biểu ghi thành công." });
       navigate('/admin/cataloging/records');
     } catch (error) {
       console.error(error);
-      alert("Lỗi khi lưu biểu ghi. Vui lòng kiểm tra lại dữ liệu MARC.");
+      toast({ variant: "destructive", title: "Lỗi hệ thống", description: "Lỗi khi lưu biểu ghi. Vui lòng kiểm tra lại dữ liệu MARC." });
     }
   };
 
@@ -162,7 +189,7 @@ export const MarcEditorPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800 dark:text-slate-100">
               <BookPlus className="text-primary-500" />
-              {t('create_record', 'Biên mục mới')}
+              {recordType === 'authority' ? 'Biên mục Chuẩn (Authority)' : t('create_record', 'Biên mục mới')}
             </h1>
           </div>
         </div>
@@ -171,7 +198,7 @@ export const MarcEditorPage: React.FC = () => {
           className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-primary-500/20 transition-all"
         >
           <Save size={18} />
-          {t('save_record', 'Lưu biểu ghi')}
+          {recordType === 'authority' ? 'Lưu Bản ghi Chuẩn' : t('save_record', 'Lưu biểu ghi')}
         </button>
       </div>
 
@@ -190,7 +217,7 @@ export const MarcEditorPage: React.FC = () => {
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Mẫu Biên Mục (*)</label>
                 <select 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200"
+                  className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:ring-1 focus:outline-none ${errors.templateId ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-primary-500'}`}
                   value={watchTemplateId || ''}
                   onChange={handleTemplateChange}
                 >
@@ -199,6 +226,7 @@ export const MarcEditorPage: React.FC = () => {
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
+                {errors.templateId && <p className="text-red-500 text-xs mt-1">Vui lòng chọn mẫu biên mục.</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -206,16 +234,17 @@ export const MarcEditorPage: React.FC = () => {
                   <label className="block text-xs font-bold text-slate-500 mb-1">Nhan đề (*)</label>
                   <input 
                     type="text" 
-                    {...register('title', { required: true })}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    {...register('title', { required: 'Nhan đề không được để trống' })}
+                    className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:ring-1 focus:outline-none ${errors.title ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-primary-500'}`}
                   />
+                  {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message as string}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Tác giả</label>
                   <input 
                     type="text" 
                     {...register('author')}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -232,7 +261,7 @@ export const MarcEditorPage: React.FC = () => {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">Thư viện nguồn</label>
                   <select 
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 text-sm"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
                     value={selectedTarget}
                     onChange={(e) => setSelectedTarget(Number(e.target.value))}
                   >
@@ -247,7 +276,7 @@ export const MarcEditorPage: React.FC = () => {
                     <input 
                       type="text"
                       placeholder="VD: 9781234567890"
-                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
                       value={isbn}
                       onChange={e => setIsbn(e.target.value)}
                     />
